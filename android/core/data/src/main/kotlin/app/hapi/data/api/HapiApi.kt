@@ -146,6 +146,21 @@ class HapiApi internal constructor(
     /** Normalized hub origin this instance talks to. */
     val hubUrl: String = baseUrl.toString().removeSuffix("/")
 
+    /**
+     * Machine model catalogs change only when the machine's agent config
+     * changes, so a short-lived cache keeps repeated picker opens instant
+     * without hiding a real change for long.
+     */
+    private val modelCatalogCache = ModelCatalogCache()
+
+    /** Runs [fetch] unless [key] is cached; stores a successful answer. */
+    private suspend fun <T> cachedCatalog(key: String, fetch: suspend () -> T): T {
+        modelCatalogCache.get<T>(key)?.let { return it }
+        val value = fetch()
+        modelCatalogCache.put(key, value)
+        return value
+    }
+
     // ---------------------------------------------------------------- core --
 
     /**
@@ -572,12 +587,14 @@ class HapiApi internal constructor(
      * enumerate its models, so the cwd must exist on the machine.
      */
     override suspend fun getMachineKimiModelsForCwd(machineId: String, cwd: String): KimiModelsResponse =
-        request(
-            "GET",
-            url("api", "machines", machineId, "kimi-models")
-                .apply { addQueryParameter("cwd", cwd) }
-                .build(),
-        )
+        cachedCatalog("kimi:$machineId:$cwd") {
+            request(
+                "GET",
+                url("api", "machines", machineId, "kimi-models")
+                    .apply { addQueryParameter("cwd", cwd) }
+                    .build(),
+            )
+        }
 
     /**
      * `GET /api/machines/:id/dsh-models` — machine-global DeepSeek Harness
@@ -585,14 +602,18 @@ class HapiApi internal constructor(
      * throwaway ACP session to read the agent's config options.
      */
     override suspend fun getMachineDshModels(machineId: String): DshModelsResponse =
-        request("GET", url("api", "machines", machineId, "dsh-models").build())
+        cachedCatalog("dsh:$machineId") {
+            request("GET", url("api", "machines", machineId, "dsh-models").build())
+        }
 
     /**
      * `GET /api/machines/:id/claude-models` — the machine's Claude aliases with
      * the model actually served behind each (RPC-wrapped: check `success]).
      */
     override suspend fun getMachineClaudeModels(machineId: String): ClaudeModelsResponse =
-        request("GET", url("api", "machines", machineId, "claude-models").build())
+        cachedCatalog("claude:$machineId") {
+            request("GET", url("api", "machines", machineId, "claude-models").build())
+        }
 
     /**
      * `GET /api/sessions/:id/kimi-models` — the live Kimi session's catalog

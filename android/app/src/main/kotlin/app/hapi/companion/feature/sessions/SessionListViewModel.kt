@@ -586,13 +586,20 @@ class SessionListViewModel(
     }
 
     companion object {
-        /** `getSessionTitle` (`web/src/lib/sessionTitle.ts`). */
+        /**
+         * `getSessionTitle` (`web/src/lib/sessionTitle.ts`).
+         *
+         * The path fallback splits on both separators: a Windows path
+         * (`D:\KimiCode`) has no '/', so splitting on '/' alone returns the
+         * whole path as the title.
+         */
         fun sessionTitle(summary: SessionSummary): String {
             val metadata = summary.metadata
             metadata?.name?.takeIf { it.isNotEmpty() }?.let { return it }
             metadata?.summary?.text?.takeIf { it.isNotEmpty() }?.let { return it }
+            metadata?.promptTitle?.takeIf { it.isNotEmpty() }?.let { return it }
             metadata?.path?.let { path ->
-                val tail = path.split('/').lastOrNull { it.isNotEmpty() }
+                val tail = path.split('/', '\\').lastOrNull { it.isNotEmpty() }
                 if (tail != null) return tail
             }
             return summary.id.take(8)

@@ -2038,26 +2038,29 @@ class ChatViewModel(
                 val response = api.getMachineClaudeModels(machineId)
                 if (response.success) response.availableModels.orEmpty() else null
             }
+            // The session-scoped endpoint answers in milliseconds for a live
+            // session; the machine-scoped one has to spin the agent up to
+            // enumerate its models (~10s cold, then cached by the runner).
+            // Try the live one first and fall back for offline sessions.
             "kimi" -> fetchCatalog(kimiModels) {
-                // The machine catalog works whether or not the session is live;
-                // the session-scoped one only exists while its ACP connection
-                // is up. Prefer the machine list, then try the live one.
+                val live = runCatching { api.getSessionKimiModels(sessionId) }.getOrNull()
+                if (live?.success == true) return@fetchCatalog live.availableModels.orEmpty()
                 val machine = machineCatalogTarget()
                 if (machine != null) {
                     val scoped = api.getMachineKimiModelsForCwd(machine.first, machine.second)
                     if (scoped.success) return@fetchCatalog scoped.availableModels.orEmpty()
                 }
-                val live = runCatching { api.getSessionKimiModels(sessionId) }.getOrNull()
-                if (live?.success == true) live.availableModels.orEmpty() else null
+                null
             }
             "dsh" -> fetchCatalog(dshModels) {
+                val live = runCatching { api.getSessionDshModels(sessionId) }.getOrNull()
+                if (live?.success == true) return@fetchCatalog live.availableModels.orEmpty()
                 val machineId = currentDetail()?.metadata?.machineId
                 if (!machineId.isNullOrBlank()) {
                     val scoped = api.getMachineDshModels(machineId)
                     if (scoped.success) return@fetchCatalog scoped.availableModels.orEmpty()
                 }
-                val live = runCatching { api.getSessionDshModels(sessionId) }.getOrNull()
-                if (live?.success == true) live.availableModels.orEmpty() else null
+                null
             }
             else -> Unit
         }

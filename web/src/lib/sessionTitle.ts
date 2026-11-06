@@ -32,7 +32,9 @@ export function getSessionTitle(session: SessionTitleSource): string {
         return session.metadata.promptTitle
     }
     if (session.metadata?.path) {
-        const parts = session.metadata.path.split('/').filter(Boolean)
+        // Split on both separators: a Windows path (`D:\KimiCode`) contains no
+        // '/', so splitting on '/' alone returns the whole path as the title.
+        const parts = session.metadata.path.split(/[/\\]/).filter(Boolean)
         return parts.length > 0 ? parts[parts.length - 1] : session.id.slice(0, 8)
     }
     return session.id.slice(0, 8)

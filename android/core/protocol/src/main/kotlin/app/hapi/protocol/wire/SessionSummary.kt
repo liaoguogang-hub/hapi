@@ -51,6 +51,12 @@ data class SessionSummaryMetadata(
     val machineId: String? = null,
     /** Summary text only — no `updatedAt` in the list projection. */
     val summary: SummaryText? = null,
+    /**
+     * Title derived from the first user prompt. Precedes the path fallback in
+     * `getSessionTitle`, so a session without a summary still shows what was
+     * asked instead of its directory (web `MetadataSchema.promptTitle`).
+     */
+    val promptTitle: String? = null,
     val flavor: String? = null,
     val worktree: WorktreeMetadata? = null,
     val agentSessionId: String? = null,

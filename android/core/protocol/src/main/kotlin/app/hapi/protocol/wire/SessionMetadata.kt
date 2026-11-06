@@ -20,6 +20,12 @@ data class SessionMetadata(
     val name: String? = null,
     val os: String? = null,
     val summary: MetadataSummary? = null,
+    /**
+     * Title derived from the first user prompt (web `MetadataSchema.promptTitle`).
+     * Precedes the path fallback in `getSessionTitle`, so a session without a
+     * summary still shows what was asked instead of its directory.
+     */
+    val promptTitle: String? = null,
     val machineId: String? = null,
     /** Agent flavor id (`claude`, `codex`, …) — resolve via `catalog.AgentFlavor`. */
     val flavor: String? = null,
