@@ -3,7 +3,9 @@ package app.hapi.companion.feature.newsession
 import app.hapi.data.api.HapiApi
 import app.hapi.protocol.wire.CodexModelsResponse
 import app.hapi.protocol.wire.AgentAvailabilityResponse
+import app.hapi.protocol.wire.DshModelsResponse
 import app.hapi.protocol.wire.GrokModelsResponse
+import app.hapi.protocol.wire.KimiModelsResponse
 import app.hapi.protocol.wire.MachineListDirectoryResponse
 import app.hapi.protocol.wire.MachinePathsExistsResponse
 import app.hapi.protocol.wire.SpawnResponse
@@ -35,6 +37,12 @@ interface NewSessionGateway {
 
     /** `GET /api/machines/:id/grok-models?cwd=` (RPC-wrapped) — Auto-mode capability probe. */
     suspend fun grokModels(machineId: String, cwd: String): GrokModelsResponse
+
+    /** `GET /api/machines/:id/kimi-models?cwd=` (RPC-wrapped) — directory-scoped catalog. */
+    suspend fun kimiModels(machineId: String, cwd: String): KimiModelsResponse
+
+    /** `GET /api/machines/:id/dsh-models` (RPC-wrapped) — machine-global catalog. */
+    suspend fun dshModels(machineId: String): DshModelsResponse
 }
 
 /** Production adapter over the hub's [HapiApi]. */
@@ -59,4 +67,10 @@ class ApiNewSessionGateway(private val api: HapiApi) : NewSessionGateway {
 
     override suspend fun grokModels(machineId: String, cwd: String): GrokModelsResponse =
         api.getMachineGrokModelsForCwd(machineId, cwd)
+
+    override suspend fun kimiModels(machineId: String, cwd: String): KimiModelsResponse =
+        api.getMachineKimiModelsForCwd(machineId, cwd)
+
+    override suspend fun dshModels(machineId: String): DshModelsResponse =
+        api.getMachineDshModels(machineId)
 }

@@ -305,6 +305,73 @@ data class GrokModelSummary(
     val name: String? = null,
 )
 
+/**
+ * `GET /api/machines/:id/claude-models` (RPC-wrapped: check [success]) — the
+ * machine's Claude catalog. `value` is the alias the CLI accepts
+ * (`opus`/`sonnet`/`haiku`), while [ClaudeModelSummary.displayName] carries the
+ * model actually served behind that alias (a relay may map `opus` to a
+ * non-Anthropic model), which is what the picker must show.
+ */
+@Serializable
+data class ClaudeModelsResponse(
+    val success: Boolean,
+    val availableModels: List<ClaudeModelSummary>? = null,
+    val error: String? = null,
+)
+
+/** `ClaudeModelSummary`. */
+@Serializable
+data class ClaudeModelSummary(
+    val value: String,
+    val displayName: String? = null,
+    val effortLevels: List<String>? = null,
+)
+
+/**
+ * `GET /api/machines/:id/kimi-models?cwd=` (RPC-wrapped: check [success]) —
+ * the directory-scoped Kimi catalog. The runner reads the agent's own model
+ * list, so ids are opaque strings that must be sent back verbatim.
+ */
+@Serializable
+data class KimiModelsResponse(
+    val success: Boolean,
+    val availableModels: List<KimiModelSummary>? = null,
+    val currentModelId: String? = null,
+    val error: String? = null,
+)
+
+/**
+ * `KimiModelSummary` — [provider] qualifies the label because ids are namespaced
+ * (`kimi-code/k3`, `DeepSeek/deepseek-v4-pro`) and bare display names repeat.
+ */
+@Serializable
+data class KimiModelSummary(
+    val modelId: String,
+    val name: String? = null,
+    val provider: String? = null,
+)
+
+/**
+ * `GET /api/machines/:id/dsh-models` and its session-level twin
+ * `/api/sessions/:id/dsh-models` (RPC-wrapped: check [success]) — the
+ * DeepSeek Harness catalog. Model ids are opaque JSON tuples
+ * (`["deepseek-official","deepseek-v4-pro"]`) that must be sent back verbatim.
+ */
+@Serializable
+data class DshModelsResponse(
+    val success: Boolean,
+    val availableModels: List<DshModelSummary>? = null,
+    val currentModelId: String? = null,
+    val error: String? = null,
+)
+
+/** `DshModelSummary`. */
+@Serializable
+data class DshModelSummary(
+    val modelId: String,
+    val name: String? = null,
+)
+
 /** `POST /api/sessions/:id/upload` (RPC-wrapped: check [success]). */
 @Serializable
 data class UploadFileResponse(

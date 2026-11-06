@@ -395,9 +395,50 @@ class HapiApiTest {
     }
 
     @Test
+    fun `machine kimi models pass cwd and parse provider`() {
+        server.enqueue(
+            ok(
+                """{"success":true,"availableModels":[{"modelId":"kimi-code/k3","name":"K3","provider":"managed:kimi-code"}],"currentModelId":"kimi-code/k3"}"""
+            )
+        )
+
+        val response = runBlocking { session.api.getMachineKimiModelsForCwd("m1", "D:\\KimiCode") }
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/api/machines/m1/kimi-models", request.path!!.substringBefore('?'))
+        assertEquals("D:\\KimiCode", request.requestUrl!!.queryParameter("cwd"))
+        assertTrue(response.success)
+        val model = response.availableModels!!.single()
+        assertEquals("kimi-code/k3", model.modelId)
+        assertEquals("K3", model.name)
+        assertEquals("managed:kimi-code", model.provider)
+        assertEquals("kimi-code/k3", response.currentModelId)
+    }
+
+    @Test
+    fun `machine dsh models take no cwd and keep opaque ids`() {
+        server.enqueue(
+            ok(
+                """{"success":true,"availableModels":[{"modelId":"[\"deepseek-official\",\"deepseek-v4-pro\"]","name":"DeepSeek-V4-Pro"}],"currentModelId":"[\"deepseek-official\",\"deepseek-v4-pro\"]"}"""
+            )
+        )
+
+        val response = runBlocking { session.api.getMachineDshModels("m1") }
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/api/machines/m1/dsh-models", request.path)
+        assertNull(request.requestUrl!!.queryParameter("cwd"))
+        assertTrue(response.success)
+        // The id is an opaque JSON tuple: it must survive round-tripping verbatim.
+        assertEquals(
+            "[\"deepseek-official\",\"deepseek-v4-pro\"]",
+            response.availableModels!!.single().modelId,
+        )
+    }
+
+    @Test
     fun `unregister device is a DELETE with a json body`() {
         server.enqueue(ok("""{"ok":true}"""))
-
         runBlocking { session.api.unregisterDevice("fcm-token") }
 
         val request = server.takeRequest()

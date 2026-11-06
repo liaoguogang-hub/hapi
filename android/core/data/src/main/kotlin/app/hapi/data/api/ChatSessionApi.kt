@@ -4,6 +4,9 @@ import app.hapi.protocol.wire.ApprovePermissionRequest
 import app.hapi.protocol.wire.CancelMessageResponse
 import app.hapi.protocol.wire.RetryIndeterminateMessageResponse
 import app.hapi.protocol.wire.CodexModelsResponse
+import app.hapi.protocol.wire.ClaudeModelsResponse
+import app.hapi.protocol.wire.DshModelsResponse
+import app.hapi.protocol.wire.KimiModelsResponse
 import app.hapi.protocol.wire.DeleteUploadResponse
 import app.hapi.protocol.wire.FileSearchResponse
 import app.hapi.protocol.wire.ResumeSessionResponse
@@ -91,6 +94,27 @@ interface ChatSessionApi : MessagesApi, AttachmentUploadApi {
 
     /** `GET /api/sessions/:id/codex-models` (RPC-wrapped: check `success`). */
     suspend fun getSessionCodexModels(sessionId: String): CodexModelsResponse
+
+    /** `GET /api/sessions/:id/kimi-models` (RPC-wrapped: check `success`). */
+    suspend fun getSessionKimiModels(sessionId: String): KimiModelsResponse
+
+    /** `GET /api/sessions/:id/dsh-models` (RPC-wrapped: check `success`). */
+    suspend fun getSessionDshModels(sessionId: String): DshModelsResponse
+
+    /**
+     * Machine-scoped fallbacks for the two above: an offline session has no
+     * live ACP catalog, so the sheet reads the machine's list instead and the
+     * change takes effect when the session resumes.
+     */
+    suspend fun getMachineKimiModelsForCwd(machineId: String, cwd: String): KimiModelsResponse
+
+    suspend fun getMachineDshModels(machineId: String): DshModelsResponse
+
+    /**
+     * `GET /api/machines/:id/claude-models` (RPC-wrapped: check `success`) —
+     * Claude's aliases carry the model actually served behind each.
+     */
+    suspend fun getMachineClaudeModels(machineId: String): ClaudeModelsResponse
 
     /**
      * `GET /api/sessions/:id/slash-commands` (RPC-wrapped: check `success`) —

@@ -10,16 +10,19 @@ import app.hapi.protocol.wire.AuthResponse
 import app.hapi.protocol.wire.CancelMessageResponse
 import app.hapi.protocol.wire.RetryIndeterminateMessageResponse
 import app.hapi.protocol.wire.RestartRunnerResponse
+import app.hapi.protocol.wire.ClaudeModelsResponse
 import app.hapi.protocol.wire.CodexModelsResponse
 import app.hapi.protocol.wire.DeleteUploadRequest
 import app.hapi.protocol.wire.DeleteUploadResponse
 import app.hapi.protocol.wire.DenyPermissionRequest
+import app.hapi.protocol.wire.DshModelsResponse
 import app.hapi.protocol.wire.FileReadResponse
 import app.hapi.protocol.wire.FileSearchResponse
 import app.hapi.protocol.wire.GitCommandResponse
 import app.hapi.protocol.wire.GrokModelsResponse
 import app.hapi.protocol.wire.HapiJson
 import app.hapi.protocol.wire.HubHealthResponse
+import app.hapi.protocol.wire.KimiModelsResponse
 import app.hapi.protocol.wire.ListDirectoryResponse
 import app.hapi.protocol.wire.MachineListDirectoryRequest
 import app.hapi.protocol.wire.MachineListDirectoryResponse
@@ -562,6 +565,48 @@ class HapiApi internal constructor(
                 .apply { addQueryParameter("cwd", cwd) }
                 .build(),
         )
+
+    /**
+     * `GET /api/machines/:id/kimi-models?cwd=` — directory-scoped Kimi catalog
+     * (RPC-wrapped: check `success]). The runner shells out to the agent to
+     * enumerate its models, so the cwd must exist on the machine.
+     */
+    override suspend fun getMachineKimiModelsForCwd(machineId: String, cwd: String): KimiModelsResponse =
+        request(
+            "GET",
+            url("api", "machines", machineId, "kimi-models")
+                .apply { addQueryParameter("cwd", cwd) }
+                .build(),
+        )
+
+    /**
+     * `GET /api/machines/:id/dsh-models` — machine-global DeepSeek Harness
+     * catalog (RPC-wrapped: check `success]). No cwd: the probe opens a
+     * throwaway ACP session to read the agent's config options.
+     */
+    override suspend fun getMachineDshModels(machineId: String): DshModelsResponse =
+        request("GET", url("api", "machines", machineId, "dsh-models").build())
+
+    /**
+     * `GET /api/machines/:id/claude-models` — the machine's Claude aliases with
+     * the model actually served behind each (RPC-wrapped: check `success]).
+     */
+    override suspend fun getMachineClaudeModels(machineId: String): ClaudeModelsResponse =
+        request("GET", url("api", "machines", machineId, "claude-models").build())
+
+    /**
+     * `GET /api/sessions/:id/kimi-models` — the live Kimi session's catalog
+     * (RPC-wrapped: check `success]). Directory scope comes from the session.
+     */
+    override suspend fun getSessionKimiModels(sessionId: String): KimiModelsResponse =
+        request("GET", url("api", "sessions", sessionId, "kimi-models").build())
+
+    /**
+     * `GET /api/sessions/:id/dsh-models` — the live DSH session's model catalog
+     * (RPC-wrapped: check `success]). Machine-global, so no cwd is needed.
+     */
+    override suspend fun getSessionDshModels(sessionId: String): DshModelsResponse =
+        request("GET", url("api", "sessions", sessionId, "dsh-models").build())
 
     // --------------------------------------------------------- git & files --
     // RAW-stdout contract (`docs/api/client-contract/rest.md` "Git & files"):

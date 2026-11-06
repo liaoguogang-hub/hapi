@@ -20,6 +20,8 @@ import app.hapi.protocol.catalog.PermissionMode
 import app.hapi.protocol.catalog.PermissionModes
 import app.hapi.protocol.wire.CodexModelSummary
 import app.hapi.protocol.wire.AgentAvailabilityEntry
+import app.hapi.protocol.wire.DshModelSummary
+import app.hapi.protocol.wire.KimiModelSummary
 import app.hapi.protocol.wire.Machine
 import app.hapi.protocol.wire.MachineDirectoryEntry
 import app.hapi.protocol.wire.objOrNull
@@ -69,6 +71,8 @@ class NewSessionStrings(
     val directoryMissingConfirm: String = NewSessionViewModel.MSG_DIRECTORY_MISSING_CONFIRM,
     val createFailed: String = "Failed to create session",
     val codexModelsFailed: String = "Failed to load Codex models",
+    val kimiModelsFailed: String = "Failed to load Kimi models",
+    val dshModelsFailed: String = "Failed to load DeepSeek Harness models",
     /** `%1$s` = failure detail. */
     val modelsFailedDetail: String = "Failed to load models: %1\$s",
     val worktreeNameInvalid: String = "Name needs at least one letter or digit",
@@ -106,6 +110,29 @@ sealed interface CodexModelsUi {
     /** Runner has no machine RPC (`rpc_target_missing`) — hide the picker. */
     data object Unsupported : CodexModelsUi
     data class Failed(val message: String) : CodexModelsUi
+}
+
+/**
+ * Kimi model catalog state (web `useKimiModelsForCwd`). The probe is
+ * directory-scoped, so the picker stays hidden until the user picks a
+ * directory that exists on the machine.
+ */
+sealed interface KimiModelsUi {
+    data object Hidden : KimiModelsUi
+    data object Loading : KimiModelsUi
+    data class Loaded(val models: List<KimiModelSummary>) : KimiModelsUi
+    data class Failed(val message: String) : KimiModelsUi
+}
+
+/**
+ * DeepSeek Harness model catalog state (web `useDshModels`). Machine-global,
+ * so no directory is needed to probe it.
+ */
+sealed interface DshModelsUi {
+    data object Hidden : DshModelsUi
+    data object Loading : DshModelsUi
+    data class Loaded(val models: List<DshModelSummary>) : DshModelsUi
+    data class Failed(val message: String) : DshModelsUi
 }
 
 sealed interface AgentAvailabilityUi {
@@ -180,6 +207,8 @@ class NewSessionViewModel(
     private val form = MutableStateFlow(NewSessionForm())
     private val prefsData = MutableStateFlow(NewSessionPrefsData())
     private val codexModels = MutableStateFlow<CodexModelsUi>(CodexModelsUi.Hidden)
+    private val kimiModels = MutableStateFlow<KimiModelsUi>(KimiModelsUi.Hidden)
+    private val dshModels = MutableStateFlow<DshModelsUi>(DshModelsUi.Hidden)
     private val agentAvailability = MutableStateFlow<AgentAvailabilityUi>(AgentAvailabilityUi.Loading)
     /** Grok Auto gate: `null` = unknown/loading (never disables), `false` = unsupported. */
     private val grokAutoSupport = MutableStateFlow<Boolean?>(null)
@@ -204,10 +233,16 @@ class NewSessionViewModel(
 
     private var directoryJob: Job? = null
     private var codexJob: Job? = null
+    private var kimiJob: Job? = null
+    private var dshJob: Job? = null
     private var availabilityJob: Job? = null
     private var defaultDirectoryJob: Job? = null
     private var grokAutoJob: Job? = null
     private var codexFetchedForMachine: String? = null
+
+    /** `(machineId, cwd)` already probed for Kimi — a failed probe never retries. */
+    private var kimiProbedFor: Pair<String, String>? = null
+    private var dshFetchedForMachine: String? = null
 
     /** `(machineId, cwd)` already probed — a failed probe never retries (web `retry: false`). */
     private var grokAutoProbedFor: Pair<String, String>? = null
@@ -244,6 +279,8 @@ class NewSessionViewModel(
             if (!draftRestored) applyPreferredLaunchSettings(initial.machineId, initial.agent)
             refreshAgentAvailability()
             refreshCodexModelsIfNeeded()
+            refreshKimiModelsIfNeeded()
+            refreshDshModelsIfNeeded()
             // A restored directory should probe existence but not pop the
             // autocomplete dropdown — suggestions belong to typing.
             suppressSuggestions = true
@@ -291,8 +328,8 @@ class NewSessionViewModel(
     val uiState: StateFlow<NewSessionUiState> = combine(
         form,
         machineStore.machines,
-        combine(codexModels, agentAvailability, grokAutoSupport) { codex, availability, grokAuto ->
-            CatalogState(codex, availability, grokAuto)
+        combine(codexModels, agentAvailability, grokAutoSupport, kimiModels, dshModels) { codex, availability, grokAuto, kimi, dsh ->
+            CatalogState(codex, availability, grokAuto, kimi, dsh)
         },
         combine(suggestions, pathExistence, prefsData, outsideWorkspaceRoots, directoryLookupError) {
                 s, exists, stored, outside, lookupError ->
@@ -310,7 +347,13 @@ class NewSessionViewModel(
         initialValue = buildUiState(
             form.value,
             machineStore.machines.value,
-            CatalogState(codexModels.value, agentAvailability.value, grokAutoSupport.value),
+            CatalogState(
+                codexModels.value,
+                agentAvailability.value,
+                grokAutoSupport.value,
+                kimiModels.value,
+                dshModels.value,
+            ),
             DirectoryData(emptyList(), emptyMap(), prefsData.value, emptySet(), null),
             SpawnFlags(isSpawning = false, spawnError = null, confirmed = false, machinesSettled = false),
         ),
@@ -327,6 +370,8 @@ class NewSessionViewModel(
         val codex: CodexModelsUi,
         val availability: AgentAvailabilityUi,
         val grokAutoSupported: Boolean?,
+        val kimi: KimiModelsUi,
+        val dsh: DshModelsUi,
     )
 
     private data class DirectoryData(
@@ -392,6 +437,8 @@ class NewSessionViewModel(
         }
         applyPreferredLaunchSettings(form.value.machineId, agent)
         refreshCodexModelsIfNeeded()
+        refreshKimiModelsIfNeeded()
+        refreshDshModelsIfNeeded()
         refreshGrokAutoSupportIfNeeded()
     }
 
@@ -601,6 +648,8 @@ class NewSessionViewModel(
         if (!draftRestored) applyPreferredLaunchSettings(machineId, form.value.agent)
         refreshAgentAvailability(force = true)
         refreshCodexModelsIfNeeded()
+        refreshKimiModelsIfNeeded()
+        refreshDshModelsIfNeeded()
         if (resetDirectory) initializeMachineDirectory(machineId) else scheduleDirectoryWork()
     }
 
@@ -683,6 +732,9 @@ class NewSessionViewModel(
                     // unknown capability, existing cwd → probe once.
                     if (result.exists[trimmed] == true) {
                         refreshGrokAutoSupportIfNeeded()
+                        // Kimi's catalog is directory-scoped too — the probe can
+                        // only run once the directory is known to exist.
+                        refreshKimiModelsIfNeeded()
                     } else {
                         clearGrokAutoSupport()
                     }
@@ -775,6 +827,113 @@ class NewSessionViewModel(
     }
 
     /**
+     * Kimi model catalog probe (web `useKimiModelsForCwd`): fires only for the
+     * kimi agent with a machine selected and a directory that exists on it.
+     * The probe shells out to the agent, so it is directory-scoped — without a
+     * valid cwd there is nothing to list and the picker stays hidden.
+     */
+    private fun refreshKimiModelsIfNeeded() {
+        val current = form.value
+        if (current.agent != "kimi") {
+            kimiJob?.cancel()
+            kimiProbedFor = null
+            kimiModels.value = KimiModelsUi.Hidden
+            return
+        }
+        val machineId = current.machineId
+        if (machineId == null) {
+            kimiModels.value = KimiModelsUi.Hidden
+            return
+        }
+        val cwd = current.trimmedDirectory
+        if (cwd.isEmpty()) {
+            kimiModels.value = KimiModelsUi.Hidden
+            return
+        }
+        if (pathExistence.value[cwd] != true) {
+            kimiModels.value = KimiModelsUi.Hidden
+            return
+        }
+        if (kimiProbedFor == (machineId to cwd)) return
+        kimiProbedFor = machineId to cwd
+        kimiJob?.cancel()
+        kimiModels.value = KimiModelsUi.Loading
+        kimiJob = scope.launch {
+            val state = try {
+                val response = gateway.kimiModels(machineId, cwd)
+                if (response.success) {
+                    KimiModelsUi.Loaded(response.availableModels.orEmpty())
+                } else {
+                    KimiModelsUi.Failed(response.error ?: strings.kimiModelsFailed)
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: ApiError) {
+                if (error.code == "rpc_target_missing") {
+                    // Runner without the machine RPC — leave the picker hidden.
+                    KimiModelsUi.Hidden
+                } else {
+                    KimiModelsUi.Failed(error.message ?: strings.kimiModelsFailed)
+                }
+            } catch (error: Exception) {
+                KimiModelsUi.Failed(error.message ?: strings.kimiModelsFailed)
+            }
+            kimiModels.value = state
+            if (state is KimiModelsUi.Loaded) {
+                form.update { reconcileKimiSelections(it) }
+            }
+        }
+    }
+
+    /**
+     * DeepSeek Harness model catalog probe (web `useDshModels`): fires for the
+     * dsh agent with a machine selected. The catalog is machine-global, so no
+     * directory is required.
+     */
+    private fun refreshDshModelsIfNeeded() {
+        val current = form.value
+        if (current.agent != "dsh") {
+            dshJob?.cancel()
+            dshFetchedForMachine = null
+            dshModels.value = DshModelsUi.Hidden
+            return
+        }
+        val machineId = current.machineId
+        if (machineId == null) {
+            dshModels.value = DshModelsUi.Hidden
+            return
+        }
+        if (dshFetchedForMachine == machineId && dshModels.value !is DshModelsUi.Hidden) return
+        dshFetchedForMachine = machineId
+        dshJob?.cancel()
+        dshModels.value = DshModelsUi.Loading
+        dshJob = scope.launch {
+            val state = try {
+                val response = gateway.dshModels(machineId)
+                if (response.success) {
+                    DshModelsUi.Loaded(response.availableModels.orEmpty())
+                } else {
+                    DshModelsUi.Failed(response.error ?: strings.dshModelsFailed)
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: ApiError) {
+                if (error.code == "rpc_target_missing") {
+                    DshModelsUi.Hidden
+                } else {
+                    DshModelsUi.Failed(error.message ?: strings.dshModelsFailed)
+                }
+            } catch (error: Exception) {
+                DshModelsUi.Failed(error.message ?: strings.dshModelsFailed)
+            }
+            dshModels.value = state
+            if (state is DshModelsUi.Loaded) {
+                form.update { reconcileDshSelections(it) }
+            }
+        }
+    }
+
+    /**
      * Grok Auto-mode capability probe (web `useGrokModelsForCwd` +
      * `shouldEnableGrokModelDiscovery`): fires only for the grok agent with a
      * machine selected and a directory that exists. `null` (unknown) or `true`
@@ -844,6 +1003,31 @@ class NewSessionViewModel(
         return NewSessionLogic.codexModelAdvertisesFastTier(current.model, loaded.models)
     }
 
+    /**
+     * Reconcile a restored kimi selection with the live catalog: an id the
+     * agent no longer advertises falls back to `auto`. The id set is dynamic
+     * (it depends on the machine's provider config), so a stale draft must not
+     * survive a config change.
+     */
+    private fun reconcileKimiSelections(current: NewSessionForm): NewSessionForm {
+        if (current.agent != "kimi") return current
+        val loaded = kimiModels.value as? KimiModelsUi.Loaded ?: return current
+        if (current.model != "auto" && loaded.models.none { it.modelId == current.model }) {
+            return current.copy(model = "auto")
+        }
+        return current
+    }
+
+    /** Reconcile a restored dsh selection with the live catalog (see above). */
+    private fun reconcileDshSelections(current: NewSessionForm): NewSessionForm {
+        if (current.agent != "dsh") return current
+        val loaded = dshModels.value as? DshModelsUi.Loaded ?: return current
+        if (current.model != "auto" && loaded.models.none { it.modelId == current.model }) {
+            return current.copy(model = "auto")
+        }
+        return current
+    }
+
     private fun worktreeNameBlocks(current: NewSessionForm): Boolean =
         current.sessionType == SESSION_TYPE_WORKTREE && worktreeNameError(current.worktreeName) != null
 
@@ -876,6 +1060,8 @@ class NewSessionViewModel(
         flags: SpawnFlags,
     ): NewSessionUiState {
         val codex = catalogs.codex
+        val kimi = catalogs.kimi
+        val dsh = catalogs.dsh
         val availability = catalogs.availability
         val currentSuggestions = directoryData.suggestions
         val exists = directoryData.exists
@@ -919,7 +1105,29 @@ class NewSessionViewModel(
             }
             agent == "codex" && (codex is CodexModelsUi.Loading || codex is CodexModelsUi.Failed) ->
                 listOf(OptionItem("auto", "Default"))
-            // codex Unsupported (old runner) and every other flavor: hidden.
+            // Kimi ids are namespaced (`kimi-code/k3`), so the provider
+            // qualifies the label — bare display names repeat across
+            // providers (web `useKimiModelsForCwd` + `oIe`).
+            agent == "kimi" && kimi is KimiModelsUi.Loaded -> {
+                listOf(OptionItem("auto", "Default")) + kimi.models.map {
+                    OptionItem(
+                        it.modelId,
+                        it.provider?.let { p -> "$p — ${it.name ?: it.modelId}" } ?: (it.name ?: it.modelId),
+                    )
+                }
+            }
+            agent == "kimi" && (kimi is KimiModelsUi.Loading || kimi is KimiModelsUi.Failed) ->
+                listOf(OptionItem("auto", "Default"))
+            // DSH ids are opaque JSON tuples; the display name is already
+            // unique enough (web `useDshModels` + `sIe`).
+            agent == "dsh" && dsh is DshModelsUi.Loaded -> {
+                listOf(OptionItem("auto", "Default")) + dsh.models.map {
+                    OptionItem(it.modelId, it.name ?: it.modelId)
+                }
+            }
+            agent == "dsh" && (dsh is DshModelsUi.Loading || dsh is DshModelsUi.Failed) ->
+                listOf(OptionItem("auto", "Default"))
+            // Unsupported (old runner) and every other flavor: hidden.
             else -> null
         }
 
@@ -978,8 +1186,18 @@ class NewSessionViewModel(
             agentAvailabilityLoading = availability is AgentAvailabilityUi.Loading,
             agentAvailabilityError = availabilityError,
             modelOptions = modelOptions,
-            modelsLoading = agent == "codex" && codex is CodexModelsUi.Loading,
-            modelsError = (codex as? CodexModelsUi.Failed)?.message?.let { strings.modelsFailedDetail.format(it) },
+            modelsLoading = when (agent) {
+                "codex" -> codex is CodexModelsUi.Loading
+                "kimi" -> kimi is KimiModelsUi.Loading
+                "dsh" -> dsh is DshModelsUi.Loading
+                else -> false
+            },
+            modelsError = when (agent) {
+                "codex" -> (codex as? CodexModelsUi.Failed)?.message
+                "kimi" -> (kimi as? KimiModelsUi.Failed)?.message
+                "dsh" -> (dsh as? DshModelsUi.Failed)?.message
+                else -> null
+            }?.let { strings.modelsFailedDetail.format(it) },
             effortOptions = if (agent == "claude") NewSessionCatalogs.CLAUDE_EFFORTS else null,
             reasoningEffortOptions = reasoningEffortOptions,
             permission = permission,

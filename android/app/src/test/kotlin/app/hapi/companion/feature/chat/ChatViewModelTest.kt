@@ -193,6 +193,19 @@ private open class FakeMessagesApi : ChatSessionApi {
     override suspend fun setModelReasoningEffort(sessionId: String, modelReasoningEffort: String?) {}
     override suspend fun getSessionCodexModels(sessionId: String): CodexModelsResponse =
         CodexModelsResponse(success = false, error = "not scripted")
+    override suspend fun getSessionKimiModels(sessionId: String): app.hapi.protocol.wire.KimiModelsResponse =
+        app.hapi.protocol.wire.KimiModelsResponse(success = false, error = "not scripted")
+    override suspend fun getSessionDshModels(sessionId: String): app.hapi.protocol.wire.DshModelsResponse =
+        app.hapi.protocol.wire.DshModelsResponse(success = false, error = "not scripted")
+    override suspend fun getMachineClaudeModels(machineId: String): app.hapi.protocol.wire.ClaudeModelsResponse =
+        app.hapi.protocol.wire.ClaudeModelsResponse(success = false, error = "not scripted")
+    override suspend fun getMachineKimiModelsForCwd(
+        machineId: String,
+        cwd: String,
+    ): app.hapi.protocol.wire.KimiModelsResponse =
+        app.hapi.protocol.wire.KimiModelsResponse(success = false, error = "not scripted")
+    override suspend fun getMachineDshModels(machineId: String): app.hapi.protocol.wire.DshModelsResponse =
+        app.hapi.protocol.wire.DshModelsResponse(success = false, error = "not scripted")
     override suspend fun getSlashCommands(sessionId: String): app.hapi.protocol.wire.SlashCommandsResponse =
         app.hapi.protocol.wire.SlashCommandsResponse(success = false, error = "not scripted")
     override suspend fun searchSessionFiles(

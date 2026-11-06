@@ -61,6 +61,9 @@ import app.hapi.protocol.wire.AgentState
 import app.hapi.protocol.wire.ApprovePermissionRequest
 import app.hapi.protocol.wire.AttachmentMetadata
 import app.hapi.protocol.wire.CodexModelSummary
+import app.hapi.protocol.wire.ClaudeModelSummary
+import app.hapi.protocol.wire.KimiModelSummary
+import app.hapi.protocol.wire.DshModelSummary
 import app.hapi.protocol.wire.HapiJson
 import app.hapi.protocol.wire.Machine
 import app.hapi.protocol.wire.SendMessageRequest
@@ -546,6 +549,21 @@ class ChatViewModel(
 
     private val codexModels = MutableStateFlow<CodexModels>(CodexModels.Idle)
 
+    /**
+     * Per-flavor session model catalog fetch. Phases match [CodexModels] so the
+     * config sheet treats every flavor the same way.
+     */
+    private sealed interface CatalogFetch<out T> {
+        data object Idle : CatalogFetch<Nothing>
+        data object Loading : CatalogFetch<Nothing>
+        data class Loaded<T>(val models: List<T>) : CatalogFetch<T>
+        data object Failed : CatalogFetch<Nothing>
+    }
+
+    private val claudeModels = MutableStateFlow<CatalogFetch<ClaudeModelSummary>>(CatalogFetch.Idle)
+    private val kimiModels = MutableStateFlow<CatalogFetch<KimiModelSummary>>(CatalogFetch.Idle)
+    private val dshModels = MutableStateFlow<CatalogFetch<DshModelSummary>>(CatalogFetch.Idle)
+
     private sealed interface SlashFetch {
         data object Idle : SlashFetch
         data object Loading : SlashFetch
@@ -642,11 +660,28 @@ class ChatViewModel(
     val config: StateFlow<SessionConfigUi> = combine(
         sessionStore.sessionDetail(sessionId),
         summaryFlow(),
-        codexModels,
+        combine(codexModels, claudeModels, kimiModels, dshModels) { codex, claude, kimi, dsh ->
+            CatalogBundle(codex, claude, kimi, dsh)
+        },
         configOpPending,
-    ) { detail, summary, models, _ ->
-        buildConfigUi(detail, summary, models)
+    ) { detail, summary, catalogs, _ ->
+        buildConfigUi(
+            detail = detail,
+            summary = summary,
+            models = catalogs.codex,
+            claudeCatalog = catalogs.claude,
+            kimiCatalog = catalogs.kimi,
+            dshCatalog = catalogs.dsh,
+        )
     }.stateIn(scope, SharingStarted.Eagerly, buildConfigUi(null, null, CodexModels.Idle))
+
+    /** Snapshot of every flavor's catalog, so `combine` stays within its arity. */
+    private data class CatalogBundle(
+        val codex: CodexModels,
+        val claude: CatalogFetch<ClaudeModelSummary>,
+        val kimi: CatalogFetch<KimiModelSummary>,
+        val dsh: CatalogFetch<DshModelSummary>,
+    )
 
     /**
      * Slash-command dropdown rows (B-M3ce): non-empty only while the composer
@@ -1969,26 +2004,103 @@ class ChatViewModel(
         )
     }
 
-    /** Fetch the codex model catalog for the picker (no-op for other flavors). */
+    /**
+     * Fetch the session's model catalog for the picker. Each flavor has its own
+     * source: codex/kimi/dsh expose session-scoped endpoints, claude's catalog
+     * is machine-scoped (the aliases carry the served model name).
+     */
     fun loadModelOptions() {
-        if (currentFlavor() != "codex") return
-        if (codexModels.value is CodexModels.Loading || codexModels.value is CodexModels.Loaded) return
-        codexModels.value = CodexModels.Loading
+        when (currentFlavor()) {
+            "codex" -> {
+                if (codexModels.value is CodexModels.Loading || codexModels.value is CodexModels.Loaded) return
+                codexModels.value = CodexModels.Loading
+                scope.launch {
+                    codexModels.value = try {
+                        val response = api.getSessionCodexModels(sessionId)
+                        val models = response.models
+                        if (response.success && models != null) {
+                            CodexModels.Loaded(models)
+                        } else {
+                            _events.tryEmit(ChatEvent.Notice(ChatNotice.ModelsLoadFailed(response.error)))
+                            CodexModels.Failed
+                        }
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (error: Exception) {
+                        _events.tryEmit(ChatEvent.Notice(ChatNotice.ModelsLoadFailed(error.message)))
+                        CodexModels.Failed
+                    }
+                }
+            }
+            "claude" -> fetchCatalog(claudeModels) {
+                val machineId = currentDetail()?.metadata?.machineId
+                if (machineId.isNullOrBlank()) return@fetchCatalog null
+                val response = api.getMachineClaudeModels(machineId)
+                if (response.success) response.availableModels.orEmpty() else null
+            }
+            "kimi" -> fetchCatalog(kimiModels) {
+                // The machine catalog works whether or not the session is live;
+                // the session-scoped one only exists while its ACP connection
+                // is up. Prefer the machine list, then try the live one.
+                val machine = machineCatalogTarget()
+                if (machine != null) {
+                    val scoped = api.getMachineKimiModelsForCwd(machine.first, machine.second)
+                    if (scoped.success) return@fetchCatalog scoped.availableModels.orEmpty()
+                }
+                val live = runCatching { api.getSessionKimiModels(sessionId) }.getOrNull()
+                if (live?.success == true) live.availableModels.orEmpty() else null
+            }
+            "dsh" -> fetchCatalog(dshModels) {
+                val machineId = currentDetail()?.metadata?.machineId
+                if (!machineId.isNullOrBlank()) {
+                    val scoped = api.getMachineDshModels(machineId)
+                    if (scoped.success) return@fetchCatalog scoped.availableModels.orEmpty()
+                }
+                val live = runCatching { api.getSessionDshModels(sessionId) }.getOrNull()
+                if (live?.success == true) live.availableModels.orEmpty() else null
+            }
+            else -> Unit
+        }
+    }
+
+    /**
+     * `(machineId, sessionPath)` for the machine-scoped catalog fallback, or
+     * null when the session detail has not loaded yet.
+     */
+    private fun machineCatalogTarget(): Pair<String, String>? {
+        val detail = currentDetail() ?: return null
+        val machineId = detail.metadata?.machineId ?: return null
+        val path = detail.metadata?.path ?: return null
+        if (machineId.isBlank() || path.isBlank()) return null
+        return machineId to path
+    }
+
+    /**
+     * Shared fetch for the [CatalogFetch] flows. [request] returns the model
+     * list, or null when the hub reported `success: false` (surfaced as a
+     * notice + [CatalogFetch.Failed] so the sheet can explain the empty picker).
+     */
+    private fun <T> fetchCatalog(
+        target: MutableStateFlow<CatalogFetch<T>>,
+        request: suspend () -> List<T>?,
+    ) {
+        val current = target.value
+        if (current is CatalogFetch.Loading || current is CatalogFetch.Loaded) return
+        target.value = CatalogFetch.Loading
         scope.launch {
-            codexModels.value = try {
-                val response = api.getSessionCodexModels(sessionId)
-                val models = response.models
-                if (response.success && models != null) {
-                    CodexModels.Loaded(models)
+            target.value = try {
+                val models = request()
+                if (models != null) {
+                    CatalogFetch.Loaded(models)
                 } else {
-                    _events.tryEmit(ChatEvent.Notice(ChatNotice.ModelsLoadFailed(response.error)))
-                    CodexModels.Failed
+                    _events.tryEmit(ChatEvent.Notice(ChatNotice.ModelsLoadFailed(null)))
+                    CatalogFetch.Failed
                 }
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (error: Exception) {
                 _events.tryEmit(ChatEvent.Notice(ChatNotice.ModelsLoadFailed(error.message)))
-                CodexModels.Failed
+                CatalogFetch.Failed
             }
         }
     }
@@ -2012,7 +2124,14 @@ class ChatViewModel(
         }
     }
 
-    private fun buildConfigUi(detail: Session?, summary: SessionSummary?, models: CodexModels): SessionConfigUi {
+    private fun buildConfigUi(
+        detail: Session?,
+        summary: SessionSummary?,
+        models: CodexModels,
+        claudeCatalog: CatalogFetch<ClaudeModelSummary> = CatalogFetch.Idle,
+        kimiCatalog: CatalogFetch<KimiModelSummary> = CatalogFetch.Idle,
+        dshCatalog: CatalogFetch<DshModelSummary> = CatalogFetch.Idle,
+    ): SessionConfigUi {
         val flavor = detail?.metadata?.flavor ?: summary?.metadata?.flavor
         val model = detail?.model
         val modelOptions: List<CatalogOption>?
@@ -2022,7 +2141,20 @@ class ChatViewModel(
 
         when (flavor) {
             "claude" -> {
-                modelOptions = ModelCatalog.claudeModelOptions(model)
+                // The machine catalog carries the served model name per alias;
+                // fall back to the static presets only while it is in flight or
+                // unavailable (an offline machine must not lose the picker).
+                modelOptions = when (claudeCatalog) {
+                    is CatalogFetch.Loaded -> claudeCatalog.models
+                        .filter { it.value != "default" }
+                        .map { CatalogOption(it.value, it.displayName ?: it.value) }
+                        .let { listOf(CatalogOption(null, "Default")) + it }
+                    is CatalogFetch.Loading -> {
+                        modelOptionsLoading = true
+                        ModelCatalog.claudeModelOptions(model)
+                    }
+                    else -> ModelCatalog.claudeModelOptions(model)
+                }
                 effort = detail?.effort
                 effortOptions = ModelCatalog.claudeEffortOptions(effort)
             }
@@ -2050,6 +2182,41 @@ class ChatViewModel(
                         modelOptionsLoading = true
                     }
                     else -> modelOptions = emptyList()
+                }
+            }
+            // Kimi ids are namespaced (`kimi-code/k3`), so the provider
+            // qualifies the label — bare display names repeat across providers
+            // (web `kimiModelOptions`).
+            "kimi" -> {
+                modelOptions = when (kimiCatalog) {
+                    is CatalogFetch.Loaded -> listOf(CatalogOption(null, "Default")) + kimiCatalog.models.map {
+                        CatalogOption(
+                            it.modelId,
+                            it.provider?.let { p -> "$p — ${it.name ?: it.modelId}" }
+                                ?: (it.name ?: it.modelId),
+                        )
+                    }
+                    is CatalogFetch.Failed -> emptyList()
+                    // Idle means the fetch has not started yet — report loading
+                    // so the sheet shows a spinner instead of "unavailable".
+                    else -> {
+                        modelOptionsLoading = true
+                        emptyList()
+                    }
+                }
+            }
+            // DSH ids are opaque JSON tuples; the display name is unique
+            // enough on its own (web `dshModelOptions`).
+            "dsh" -> {
+                modelOptions = when (dshCatalog) {
+                    is CatalogFetch.Loaded -> listOf(CatalogOption(null, "Default")) + dshCatalog.models.map {
+                        CatalogOption(it.modelId, it.name ?: it.modelId)
+                    }
+                    is CatalogFetch.Failed -> emptyList()
+                    else -> {
+                        modelOptionsLoading = true
+                        emptyList()
+                    }
                 }
             }
             else -> modelOptions = null // Generic fallback: hide the picker.

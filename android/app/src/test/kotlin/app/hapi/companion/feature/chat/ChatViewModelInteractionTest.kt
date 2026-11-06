@@ -36,6 +36,9 @@ import app.hapi.protocol.wire.CancelMessageResponse
 import app.hapi.protocol.chat.NormalizedMessage
 import app.hapi.protocol.chat.normalizeDecryptedMessage
 import app.hapi.protocol.wire.CodexModelsResponse
+import app.hapi.protocol.wire.ClaudeModelsResponse
+import app.hapi.protocol.wire.DshModelsResponse
+import app.hapi.protocol.wire.KimiModelsResponse
 import app.hapi.protocol.wire.DecryptedMessage
 import app.hapi.protocol.wire.DeleteUploadResponse
 import app.hapi.protocol.wire.FileSearchItem
@@ -279,6 +282,21 @@ private class RecordingChatApi : ChatSessionApi {
     }
 
     override suspend fun getSessionCodexModels(sessionId: String): CodexModelsResponse = codexModelsResult
+
+    override suspend fun getSessionKimiModels(sessionId: String): KimiModelsResponse =
+        KimiModelsResponse(success = false, error = "not scripted")
+
+    override suspend fun getSessionDshModels(sessionId: String): DshModelsResponse =
+        DshModelsResponse(success = false, error = "not scripted")
+
+    override suspend fun getMachineClaudeModels(machineId: String): ClaudeModelsResponse =
+        ClaudeModelsResponse(success = false, error = "not scripted")
+
+    override suspend fun getMachineKimiModelsForCwd(machineId: String, cwd: String): KimiModelsResponse =
+        KimiModelsResponse(success = false, error = "not scripted")
+
+    override suspend fun getMachineDshModels(machineId: String): DshModelsResponse =
+        DshModelsResponse(success = false, error = "not scripted")
 
     var slashCommandsResult: SlashCommandsResponse = SlashCommandsResponse(success = false, error = "not scripted")
     val slashCommandsCalls = MutableStateFlow(0)

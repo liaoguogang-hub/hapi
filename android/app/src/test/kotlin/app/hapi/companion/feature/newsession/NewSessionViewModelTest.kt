@@ -10,6 +10,8 @@ import app.hapi.protocol.wire.AgentAvailabilityResponse
 import app.hapi.protocol.wire.CodexModelSummary
 import app.hapi.protocol.wire.CodexModelsResponse
 import app.hapi.protocol.wire.GrokModelsResponse
+import app.hapi.protocol.wire.KimiModelsResponse
+import app.hapi.protocol.wire.DshModelsResponse
 import app.hapi.protocol.wire.HapiJson
 import app.hapi.protocol.wire.Machine
 import app.hapi.protocol.wire.MachineDirectoryEntry
@@ -50,6 +52,8 @@ private class FakeGateway : NewSessionGateway {
     val codexCalls = mutableListOf<String>()
     val availabilityCalls = mutableListOf<String>()
     val grokCalls = mutableListOf<Pair<String, String>>()
+    val kimiCalls = mutableListOf<Pair<String, String>>()
+    val dshCalls = mutableListOf<String>()
     val includeHiddenCalls = mutableListOf<Boolean>()
 
     var entries: List<MachineDirectoryEntry> = emptyList()
@@ -59,6 +63,10 @@ private class FakeGateway : NewSessionGateway {
     var codexThrows: Exception? = null
     var grokResult = GrokModelsResponse(success = true)
     var grokThrows: Exception? = null
+    var kimiResult = KimiModelsResponse(success = true)
+    var kimiThrows: Exception? = null
+    var dshResult = DshModelsResponse(success = true)
+    var dshThrows: Exception? = null
     var availabilityResult = AgentAvailabilityResponse(
         AgentFlavor.CREATABLE.map { AgentAvailabilityEntry(agent = it.id, available = true) },
     )
@@ -106,6 +114,18 @@ private class FakeGateway : NewSessionGateway {
         grokCalls.add(machineId to cwd)
         grokThrows?.let { throw it }
         return grokResult
+    }
+
+    override suspend fun kimiModels(machineId: String, cwd: String): KimiModelsResponse {
+        kimiCalls.add(machineId to cwd)
+        kimiThrows?.let { throw it }
+        return kimiResult
+    }
+
+    override suspend fun dshModels(machineId: String): DshModelsResponse {
+        dshCalls.add(machineId)
+        dshThrows?.let { throw it }
+        return dshResult
     }
 }
 
