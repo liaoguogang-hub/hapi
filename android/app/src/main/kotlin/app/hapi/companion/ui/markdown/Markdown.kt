@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
@@ -140,9 +141,16 @@ fun Markdown(text: String, modifier: Modifier = Modifier) {
     }
     val baseStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp)
     CompositionLocalProvider(LocalTextStyle provides baseStyle) {
-        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (parsed != null) MarkdownBlockChildren(parsed.document, parsed)
-            else Text(text)
+        // SelectionContainer makes the rendered prose selectable and copyable
+        // (long-press to select, drag the handles, then "Copy"). The user
+        // bubble already had one; assistant replies, tool prose and the file
+        // viewer did not, so nothing in a conversation could be copied except
+        // the operator's own prompt.
+        SelectionContainer {
+            Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (parsed != null) MarkdownBlockChildren(parsed.document, parsed)
+                else Text(text)
+            }
         }
     }
 }

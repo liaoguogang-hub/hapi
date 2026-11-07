@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -112,14 +113,18 @@ fun CodeBlock(code: String, language: String?, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
         ) {
-            Text(
-                text = highlighted,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                softWrap = false,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            )
+            // Selectable so the code itself can be long-pressed and copied.
+            // The header copy button still exports the whole block.
+            SelectionContainer {
+                Text(
+                    text = highlighted,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    softWrap = false,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                )
+            }
         }
     }
 }

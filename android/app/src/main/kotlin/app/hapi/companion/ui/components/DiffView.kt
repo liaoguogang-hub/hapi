@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -85,21 +86,27 @@ fun DiffView(
                 .width(IntrinsicSize.Max)
                 .padding(vertical = 4.dp),
         ) {
-            for (row in visible) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(row.background),
-                ) {
-                    Text(
-                        text = row.text,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        softWrap = false,
-                        maxLines = 1,
-                        modifier = Modifier.padding(horizontal = 10.dp),
-                    )
+            // One container for the whole hunk: a selection can span several
+            // diff rows, which per-row containers would prevent.
+            SelectionContainer {
+                Column {
+                    for (row in visible) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(row.background),
+                        ) {
+                            Text(
+                                text = row.text,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                softWrap = false,
+                                maxLines = 1,
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
