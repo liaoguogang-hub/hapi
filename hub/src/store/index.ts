@@ -122,6 +122,14 @@ export class Store {
         this.db.exec('PRAGMA synchronous = NORMAL')
         this.db.exec('PRAGMA foreign_keys = ON')
         this.db.exec('PRAGMA busy_timeout = 5000')
+        // Keep SQLite's scratch space in RAM. Building an FTS5 index over a long
+        // message makes SQLite spill to its temporary directory, and in the
+        // compiled build that directory resolves to something this process
+        // cannot open: the insert then fails with SQLITE_CANTOPEN ("unable to
+        // open database file") even though the database itself is fine. The
+        // store is a local single-user database, so memory-backed scratch costs
+        // little and removes the dependency on a writable temp path entirely.
+        this.db.exec('PRAGMA temp_store = MEMORY')
         this.initSchema()
 
         if (dbPath !== ':memory:' && !dbPath.startsWith('file::memory:')) {

@@ -424,6 +424,58 @@ export type ImportDshSessionsRequest = z.infer<typeof ImportDshSessionsRequestSc
 export type DshImportResult = z.infer<typeof DshImportResultSchema>
 export type ImportDshSessionsResponse = z.infer<typeof ImportDshSessionsResponseSchema>
 
+/**
+ * Kimi Code history imported from the local CLI's session store.
+ *
+ * Unlike DSH, kimi-code has no host RPC to read a transcript from: the CLI reads
+ * `~/.kimi-code/sessions/<workspace>/<session>/` directly (the `state.json` for
+ * title/cwd and `agents/main/wire.jsonl` for the turns) and posts the mapped
+ * transcript here. Same wire shape and the same append-only guarantees as the
+ * DSH import, so the two share `CodexImportedMessageSchema`.
+ */
+export const KimiImportedMessageContentSchema = CodexImportedMessageSchema
+
+export const KimiImportedMessageSchema = z.object({
+    localId: z.string().min(1),
+    createdAt: z.number(),
+    content: KimiImportedMessageContentSchema
+})
+
+export const KimiImportSessionSchema = z.object({
+    kimiSessionId: z.string().min(1),
+    title: z.string(),
+    cwd: z.string().nullable().optional(),
+    updatedAt: z.number(),
+    messages: z.array(KimiImportedMessageSchema)
+})
+
+export const MAX_KIMI_SESSION_IMPORTS = 50
+
+export const ImportKimiSessionsRequestSchema = z.object({
+    machineId: z.string().min(1),
+    sessions: z.array(KimiImportSessionSchema).min(1).max(MAX_KIMI_SESSION_IMPORTS)
+})
+
+export const KimiImportResultSchema = z.object({
+    kimiSessionId: z.string(),
+    hapiSessionId: z.string().optional(),
+    action: z.enum(['created', 'updated', 'unchanged']).optional(),
+    appended: z.number().optional(),
+    error: z.object({ code: z.string(), message: z.string() }).optional()
+})
+
+export const ImportKimiSessionsResponseSchema = z.object({
+    success: z.boolean(),
+    results: z.array(KimiImportResultSchema)
+})
+
+export type KimiImportedMessageContent = z.infer<typeof KimiImportedMessageContentSchema>
+export type KimiImportedMessage = z.infer<typeof KimiImportedMessageSchema>
+export type KimiImportSession = z.infer<typeof KimiImportSessionSchema>
+export type ImportKimiSessionsRequest = z.infer<typeof ImportKimiSessionsRequestSchema>
+export type KimiImportResult = z.infer<typeof KimiImportResultSchema>
+export type ImportKimiSessionsResponse = z.infer<typeof ImportKimiSessionsResponseSchema>
+
 export const SessionCollaborationModeRequestSchema = z.object({
     mode: CodexCollaborationModeSchema
 })
