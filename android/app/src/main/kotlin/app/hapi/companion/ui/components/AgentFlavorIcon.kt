@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,9 +41,14 @@ import app.hapi.companion.ui.theme.hapi
  * dsh renders the whale in a fixed near-black rather than tinting it: the
  * brand-blue whale reads as an indistinct blob at 16dp, and a tinted mono
  * variant would pick up the Material You accent (the wallpaper-derived
- * teal on this phone), not black. Fixed black needs its own light/dark
- * pair, so it is drawn as an untinted [Image] and the fill is chosen per
- * theme instead of by the content color.
+ * teal on this phone), not black.
+ *
+ * The mark itself is a raster glyph traced from the DeepSeek Harness
+ * desktop app icon, shipped as two PNGs (near-black for light surfaces,
+ * near-white for dark ones) rather than a vector: the whale has a closed
+ * belly crescent, a narrow head/tail gap and a small eye, and those
+ * one-pixel-wide negative spaces do not survive being expressed as
+ * vector subpaths.
  */
 @Composable
 fun AgentFlavorIcon(flavor: String?, modifier: Modifier = Modifier.size(16.dp)) {
@@ -56,16 +60,14 @@ fun AgentFlavorIcon(flavor: String?, modifier: Modifier = Modifier.size(16.dp)) 
         )
 
         "dsh" -> Image(
-            painter = painterResource(R.drawable.ic_agent_deepseek),
+            painter = painterResource(
+                if (MaterialTheme.hapi.isDark) {
+                    R.drawable.ic_agent_deepseek_dark
+                } else {
+                    R.drawable.ic_agent_deepseek_light
+                },
+            ),
             contentDescription = null,
-            // The drawable ships the near-black fill for light surfaces; on a
-            // dark surface that would disappear, so flip it to the light
-            // counterpart instead of letting it inherit the accent color.
-            colorFilter = if (MaterialTheme.hapi.isDark) {
-                ColorFilter.tint(Color(0xFFF5F5F7))
-            } else {
-                null
-            },
             modifier = modifier,
         )
 
