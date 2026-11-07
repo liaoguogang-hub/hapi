@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,10 +39,12 @@ import app.hapi.companion.ui.theme.hapi
  * copilot mirrors the web's fixed GitHub-mark tint (#24292F light /
  * #E6EDF3 dark). Unknown flavors fall back to the web's "Un" badge.
  *
- * dsh is a mono variant here even though the web uses its Color one: the
- * brand-blue whale reads as an indistinct blob at 16dp in the picker, so it
- * ships the monochrome mark tinted with the content color instead — black on
- * light surfaces, near-white on dark ones.
+ * dsh renders the whale in a fixed near-black rather than tinting it: the
+ * brand-blue whale reads as an indistinct blob at 16dp, and a tinted mono
+ * variant would pick up the Material You accent (the wallpaper-derived
+ * teal on this phone), not black. Fixed black needs its own light/dark
+ * pair, so it is drawn as an untinted [Image] and the fill is chosen per
+ * theme instead of by the content color.
  */
 @Composable
 fun AgentFlavorIcon(flavor: String?, modifier: Modifier = Modifier.size(16.dp)) {
@@ -49,6 +52,20 @@ fun AgentFlavorIcon(flavor: String?, modifier: Modifier = Modifier.size(16.dp)) 
         in COLOR_FLAVOR_ICONS -> Image(
             painter = painterResource(COLOR_FLAVOR_ICONS.getValue(normalized)),
             contentDescription = null,
+            modifier = modifier,
+        )
+
+        "dsh" -> Image(
+            painter = painterResource(R.drawable.ic_agent_deepseek),
+            contentDescription = null,
+            // The drawable ships the near-black fill for light surfaces; on a
+            // dark surface that would disappear, so flip it to the light
+            // counterpart instead of letting it inherit the accent color.
+            colorFilter = if (MaterialTheme.hapi.isDark) {
+                ColorFilter.tint(Color(0xFFF5F5F7))
+            } else {
+                null
+            },
             modifier = modifier,
         )
 
@@ -95,7 +112,6 @@ private val COLOR_FLAVOR_ICONS: Map<String, Int> = mapOf(
 
 private val MONO_FLAVOR_ICONS: Map<String, Int> = mapOf(
     "cursor" to R.drawable.ic_agent_cursor,
-    "dsh" to R.drawable.ic_agent_deepseek,
     "grok" to R.drawable.ic_agent_grok,
     "kimi" to R.drawable.ic_agent_kimi,
     "opencode" to R.drawable.ic_agent_opencode,
