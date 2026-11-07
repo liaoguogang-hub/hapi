@@ -229,7 +229,7 @@ fun ScratchlistScreen(
                                 // never attachments; silent no-op on failure.
                                 val copied = runCatching {
                                     context.getSystemService(ClipboardManager::class.java)
-                                        .setPrimaryClip(ClipData.newPlainText("HAPI", entry.text))
+                                        .setPrimaryClip(ClipData.newPlainText("Kestrel", entry.text))
                                 }.isSuccess
                                 if (copied) {
                                     copiedEntryId = entry.entryId

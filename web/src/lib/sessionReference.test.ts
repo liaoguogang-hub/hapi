@@ -63,7 +63,7 @@ describe('buildSessionReferenceText', () => {
 
     it('omits title when empty after normalization', () => {
         expect(buildSessionReferenceText('   \n\t  ', 'abc-def')).toBe(
-            `See HAPI session /sessions/abc-def for context.${SESSION_REFERENCE_STEER_SUFFIX}`
+            `See Kestrel session /sessions/abc-def for context.${SESSION_REFERENCE_STEER_SUFFIX}`
         )
     })
 

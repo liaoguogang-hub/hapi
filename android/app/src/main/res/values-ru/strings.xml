@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HAPI</string>
+    <string name="app_name">Kestrel</string>
 
     <!-- Markdown / code / diff rendering (B-M2d1) -->
     <string name="code_copy">Копировать</string>
@@ -13,7 +13,7 @@
 
     <!-- Pairing (B-M1d) -->
     <string name="pairing_title">Сопряжение с хабом</string>
-    <string name="pairing_intro">HAPI размещается самостоятельно: ваши агенты кодинга работают на ваших машинах за хабом HAPI, которым управляете вы. Сопрягите это приложение с хабом, чтобы наблюдать за ними и управлять ими с телефона.</string>
+    <string name="pairing_intro">Kestrel размещается самостоятельно: ваши агенты кодинга работают на ваших машинах за хабом Kestrel, которым управляете вы. Сопрягите это приложение с хабом, чтобы наблюдать за ними и управлять ими с телефона.</string>
     <string name="pairing_hint">Отсканируйте QR-код «Companion app», который хаб печатает при запуске (с --relay), либо введите URL хаба и токен доступа вручную.</string>
     <string name="pairing_scan_qr">Сканировать QR-код</string>
     <string name="pairing_manual_entry">Ввести вручную</string>
@@ -41,7 +41,7 @@
     <!-- QR scan -->
     <string name="pairing_scan_title">Сканировать QR для сопряжения</string>
     <string name="pairing_scan_prompt">Наведите камеру на QR-код сопряжения</string>
-    <string name="pairing_scan_not_pairing_qr">Этот QR-код не является действительным HTTPS-кодом сопряжения HAPI. Отсканируйте один из двух QR-кодов, которые печатает хаб (Companion app или Web app).</string>
+    <string name="pairing_scan_not_pairing_qr">Этот QR-код не является действительным HTTPS-кодом сопряжения Kestrel. Отсканируйте один из двух QR-кодов, которые печатает хаб (Companion app или Web app).</string>
     <string name="pairing_scan_again">Сканировать снова</string>
     <string name="pairing_scan_permission_rationale">Для сканирования QR-кода нужен доступ к камере. Можно также сопрячь вручную.</string>
     <string name="pairing_scan_grant_camera">Разрешить доступ к камере</string>
@@ -580,7 +580,7 @@
     <string name="pairing_error_token_rejected">Хаб отклонил этот токен доступа. Токены меняются при ротации CLI_API_TOKEN на хабе — возьмите свежий QR-код или токен и попробуйте снова.</string>
     <string name="pairing_error_hub_gone">Этот хаб больше не сопряжён. Сопрягите его заново ниже.</string>
     <string name="pairing_error_unreachable">Не удалось связаться с %1$s. Проверьте адрес, сеть и то, что хаб запущен.</string>
-    <string name="pairing_error_not_a_hub">%1$s ответил, но это не похоже на хаб HAPI. Перепроверьте URL (это должен быть адрес самого хаба, а не веб-приложения).</string>
+    <string name="pairing_error_not_a_hub">%1$s ответил, но это не похоже на хаб Kestrel. Перепроверьте URL (это должен быть адрес самого хаба, а не веб-приложения).</string>
     <string name="pairing_error_protocol_update_app">Этот хаб использует протокол v%1$d, а приложение поддерживает v%2$d. Обновите приложение и попробуйте снова.</string>
     <string name="pairing_error_protocol_update_hub">Этот хаб использует протокол v%1$d, а приложение поддерживает v%2$d. Обновите хаб и попробуйте снова.</string>
     <string name="pairing_error_auth_failed">Сопряжение не удалось (HTTP %1$d). Попробуйте снова через мгновение.</string>
@@ -599,7 +599,7 @@
     <string name="new_session_error_directory_outside_workspace_roots">Каталог должен находиться внутри одного из корней рабочего пространства этой машины.</string>
     <string name="directory_browser_error">Не удалось просмотреть каталоги</string>
     <string name="new_session_error_agent_availability">Не удалось проверить установленных агентов</string>
-    <string name="new_session_error_runner_upgrade_required">Обновите и перезапустите раннер HAPI этой машины перед созданием сессий.</string>
+    <string name="new_session_error_runner_upgrade_required">Обновите и перезапустите раннер Kestrel этой машины перед созданием сессий.</string>
     <string name="new_session_error_no_available_agents">На этой машине не установлено ни одного поддерживаемого агента.</string>
     <string name="new_session_error_selected_agent_unavailable">Выбранный агент недоступен на этой машине.</string>
     <string name="chat_back_to_latest">К последним ↓</string>
@@ -714,7 +714,7 @@
     <string name="connection_reason_closed">поток закрыт</string>
     <string name="connection_reason_http_code">HTTP %1$d</string>
     <string name="runner_skew_summary_title">Устаревших раннеров: %1$d</string>
-    <string name="runner_skew_summary_body">Обновите HAPI CLI на каждом хосте ниже, затем перезапустите соответствующий раннер. Сверните или отложите этот баннер, чтобы добраться до сессий под ним.</string>
+    <string name="runner_skew_summary_body">Обновите Kestrel CLI на каждом хосте ниже, затем перезапустите соответствующий раннер. Сверните или отложите этот баннер, чтобы добраться до сессий под ним.</string>
     <string name="runner_skew_minimized">Устаревших раннеров: %1$d (%2$s) — нажмите, чтобы развернуть</string>
     <string name="runner_skew_minimize">Свернуть</string>
     <string name="runner_skew_dismiss_temp">Отложить на 1 ч</string>

@@ -68,7 +68,7 @@ export function buildApnsRequestBody(envelope: string): Record<string, unknown> 
     return {
         aps: {
             'mutable-content': 1,
-            alert: { title: 'HAPI', body: 'New activity' },
+            alert: { title: 'Kestrel', body: 'New activity' },
             sound: 'default'
         },
         hapi: { v: 1, e: envelope }

@@ -16,7 +16,7 @@ function makeSession(metadata: Session['metadata']): Session {
 
 describe('useSessionBrowserTitle', () => {
     it('tracks session title updates and restores the app title on unmount', () => {
-        document.title = 'HAPI'
+        document.title = 'Kestrel'
         const initialSession = makeSession({
             path: '/work/hapi',
             host: 'localhost',
@@ -28,7 +28,7 @@ describe('useSessionBrowserTitle', () => {
             { initialProps: { session: initialSession } },
         )
 
-        expect(document.title).toBe('Initial summary - HAPI')
+        expect(document.title).toBe('Initial summary - Kestrel')
 
         rerender({
             session: makeSession({
@@ -37,28 +37,28 @@ describe('useSessionBrowserTitle', () => {
             }),
         })
 
-        expect(document.title).toBe('Renamed session - HAPI')
+        expect(document.title).toBe('Renamed session - Kestrel')
 
         unmount()
-        expect(document.title).toBe('HAPI')
+        expect(document.title).toBe('Kestrel')
     })
 
     it('uses the app title while loading and the shared session fallbacks when titles are missing', () => {
-        document.title = 'Stale session - HAPI'
+        document.title = 'Stale session - Kestrel'
 
         const { rerender } = renderHook(
             ({ session }: { session: Session | null }) => useSessionBrowserTitle(session),
             { initialProps: { session: null as Session | null } },
         )
 
-        expect(document.title).toBe('HAPI')
+        expect(document.title).toBe('Kestrel')
 
         rerender({
             session: makeSession({ path: '/work/hapi', host: 'localhost' }),
         })
-        expect(document.title).toBe('hapi - HAPI')
+        expect(document.title).toBe('hapi - Kestrel')
 
         rerender({ session: makeSession(null) })
-        expect(document.title).toBe('12345678 - HAPI')
+        expect(document.title).toBe('12345678 - Kestrel')
     })
 })

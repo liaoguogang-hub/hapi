@@ -84,7 +84,7 @@ describe('buildApnsRequestBody', () => {
         expect(buildApnsRequestBody('ZW52')).toEqual({
             aps: {
                 'mutable-content': 1,
-                alert: { title: 'HAPI', body: 'New activity' },
+                alert: { title: 'Kestrel', body: 'New activity' },
                 sound: 'default'
             },
             hapi: { v: 1, e: 'ZW52' }
@@ -172,7 +172,7 @@ describe('ApnsClient against a local node:http2 server', () => {
         expect(JSON.parse(request.body)).toEqual({
             aps: {
                 'mutable-content': 1,
-                alert: { title: 'HAPI', body: 'New activity' },
+                alert: { title: 'Kestrel', body: 'New activity' },
                 sound: 'default'
             },
             hapi: { v: 1, e: 'RU5DUllQVEVE' }

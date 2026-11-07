@@ -155,7 +155,7 @@ class PairingViewModel(
             return PairingUiState.Error(PairingError.Unreachable(hubUrl))
         } catch (_: Exception) {
             // Non-2xx or a body that is not the health schema: something
-            // answered, but it does not look like a HAPI hub.
+            // answered, but it does not look like a Kestrel hub.
             return PairingUiState.Error(PairingError.NotAHub(hubUrl))
         }
         if (health.protocolVersion != SUPPORTED_PROTOCOL_VERSION) {

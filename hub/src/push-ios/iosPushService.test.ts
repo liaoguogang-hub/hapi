@@ -12,7 +12,7 @@ function makePayload(overrides: Partial<IosPushNotificationPayload> = {}): IosPu
         sessionId: 's1',
         sessionName: 'Demo',
         url: '/sessions/s1',
-        title: 'HAPI',
+        title: 'Kestrel',
         body: 'Ready for input',
         severity: 'info',
         contractVersion: '1',
@@ -72,7 +72,7 @@ describe('IosPushService.sendToNamespace', () => {
             sessionId: 's1',
             sessionName: 'Demo',
             severity: 'info',
-            title: 'HAPI',
+            title: 'Kestrel',
             type: 'permission-request',
             url: '/sessions/s1'
         })
@@ -171,13 +171,13 @@ describe('IosPushService.sendToNamespace', () => {
         await service.sendToNamespace('default', {
             type: 'ready',
             sessionId: 's1',
-            title: 'HAPI',
+            title: 'Kestrel',
             body: 'Ready for input',
             contractVersion: '1'
         })
 
         const plaintext = decryptEnvelope(key, transport.requests[0].envelope)
-        expect(plaintext).toBe('{"body":"Ready for input","contractVersion":"1","sessionId":"s1","title":"HAPI","type":"ready"}')
+        expect(plaintext).toBe('{"body":"Ready for input","contractVersion":"1","sessionId":"s1","title":"Kestrel","type":"ready"}')
     })
 })
 

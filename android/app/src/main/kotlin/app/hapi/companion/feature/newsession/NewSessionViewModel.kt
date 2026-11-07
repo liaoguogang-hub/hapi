@@ -79,7 +79,7 @@ class NewSessionStrings(
     val directoryOutsideWorkspaceRoots: String = "Directory must be inside one of this machine's workspace roots.",
     val directoryLookupFailed: String = "Failed to browse directories",
     val agentAvailabilityFailed: String = "Failed to check installed Agents",
-    val runnerUpgradeRequired: String = "Upgrade and restart this machine's HAPI runner before creating sessions.",
+    val runnerUpgradeRequired: String = "Upgrade and restart this machine's Kestrel runner before creating sessions.",
     val noAvailableAgents: String = "No supported Agents are installed on this machine.",
     val selectedAgentUnavailable: String = "The selected Agent is not available on this machine.",
     /** Appended to the grok `Auto` option label as `Auto (<value>)` when gated. */

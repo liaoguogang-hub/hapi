@@ -178,7 +178,7 @@ function sanitizeShareFileNamePart(title: string): string {
 }
 
 function getShareFileName(title: string): string {
-    return `HAPI-${sanitizeShareFileNamePart(title)}-${formatShareTimestamp()}.png`
+    return `Kestrel-${sanitizeShareFileNamePart(title)}-${formatShareTimestamp()}.png`
 }
 
 function prepareExportElement(element: HTMLElement, exportWidth: number, preserveSourceLayout: boolean): HTMLElement {
@@ -695,7 +695,7 @@ async function shareImageBlob(blob: Blob, fileName: string): Promise<void> {
         throw new Error('Image sharing is not supported in this browser')
     }
     if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'HAPI shared turn' })
+        await navigator.share({ files: [file], title: 'Kestrel shared turn' })
         return
     }
     throw new Error('File sharing is not supported in this browser')

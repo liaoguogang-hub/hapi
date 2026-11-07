@@ -68,7 +68,7 @@ object Mentions {
 
     /** `SESSION_REFERENCE_STEER_SUFFIX`, `shared/src/sessionCitation.ts`. */
     const val SESSION_REFERENCE_STEER_SUFFIX =
-        " HAPI hub peer - call inspect_peer with that session id; do not Grep/Glob/Read /sessions/ as a local file."
+        " Kestrel hub peer - call inspect_peer with that session id; do not Grep/Glob/Read /sessions/ as a local file."
 
     /** File-mention RPC cap (`router.tsx` passes 50). */
     const val FILE_SEARCH_LIMIT = 50
@@ -350,7 +350,7 @@ object Mentions {
         val base = if (title.isNotEmpty()) {
             "See session ${jsonQuote(title)} ($path) for context"
         } else {
-            "See HAPI session $path for context"
+            "See Kestrel session $path for context"
         }
         return "$base.$SESSION_REFERENCE_STEER_SUFFIX"
     }

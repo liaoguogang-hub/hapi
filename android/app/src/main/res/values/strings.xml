@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">HAPI</string>
+    <string name="app_name">Kestrel</string>
 
     <!-- Markdown / code / diff rendering (B-M2d1) -->
     <string name="code_copy">Copy</string>
@@ -13,7 +13,7 @@
 
     <!-- Pairing (B-M1d) -->
     <string name="pairing_title">Pair with your hub</string>
-    <string name="pairing_intro">HAPI is self-hosted: your coding agents run on your own machines behind a HAPI hub you operate. Pair this app with that hub to watch and steer them from your phone.</string>
+    <string name="pairing_intro">Kestrel is self-hosted: your coding agents run on your own machines behind a Kestrel hub you operate. Pair this app with that hub to watch and steer them from your phone.</string>
     <string name="pairing_hint">Scan the “Companion app” QR code your hub prints on startup (with --relay), or enter the hub URL and access token by hand.</string>
     <string name="pairing_scan_qr">Scan QR code</string>
     <string name="pairing_manual_entry">Enter manually</string>
@@ -41,7 +41,7 @@
     <!-- QR scan -->
     <string name="pairing_scan_title">Scan pairing QR</string>
     <string name="pairing_scan_prompt">Point the camera at the pairing QR code</string>
-    <string name="pairing_scan_not_pairing_qr">That QR code is not a valid HTTPS HAPI pairing code. Scan one of the two QR codes your hub prints (Companion app or Web app).</string>
+    <string name="pairing_scan_not_pairing_qr">That QR code is not a valid HTTPS Kestrel pairing code. Scan one of the two QR codes your hub prints (Companion app or Web app).</string>
     <string name="pairing_scan_again">Scan again</string>
     <string name="pairing_scan_permission_rationale">Camera access is needed to scan the pairing QR code. You can also pair manually instead.</string>
     <string name="pairing_scan_grant_camera">Grant camera access</string>
@@ -580,7 +580,7 @@
     <string name="pairing_error_token_rejected">The hub rejected this access token. Tokens change when the hub rotates its CLI_API_TOKEN — grab a fresh QR code or token and try again.</string>
     <string name="pairing_error_hub_gone">That hub is no longer paired. Pair it again below.</string>
     <string name="pairing_error_unreachable">Could not reach %1$s. Check the address, your network, and that the hub is running.</string>
-    <string name="pairing_error_not_a_hub">%1$s answered, but not like a HAPI hub. Double-check the URL (it should be the hub’s own address, not the web app’s).</string>
+    <string name="pairing_error_not_a_hub">%1$s answered, but not like a Kestrel hub. Double-check the URL (it should be the hub’s own address, not the web app’s).</string>
     <string name="pairing_error_protocol_update_app">This hub speaks protocol v%1$d but the app supports v%2$d. Update the app and try again.</string>
     <string name="pairing_error_protocol_update_hub">This hub speaks protocol v%1$d but the app supports v%2$d. Update the hub and try again.</string>
     <string name="pairing_error_auth_failed">Pairing failed (HTTP %1$d). Try again in a moment.</string>
@@ -599,7 +599,7 @@
     <string name="new_session_error_directory_outside_workspace_roots">Directory must be inside one of this machine’s workspace roots.</string>
     <string name="directory_browser_error">Failed to browse directories</string>
     <string name="new_session_error_agent_availability">Failed to check installed Agents</string>
-    <string name="new_session_error_runner_upgrade_required">Upgrade and restart this machine’s HAPI runner before creating sessions.</string>
+    <string name="new_session_error_runner_upgrade_required">Upgrade and restart this machine’s Kestrel runner before creating sessions.</string>
     <string name="new_session_error_no_available_agents">No supported Agents are installed on this machine.</string>
     <string name="new_session_error_selected_agent_unavailable">The selected Agent is not available on this machine.</string>
     <string name="chat_back_to_latest">Back to latest ↓</string>
@@ -714,7 +714,7 @@
     <string name="connection_reason_closed">stream closed</string>
     <string name="connection_reason_http_code">HTTP %1$d</string>
     <string name="runner_skew_summary_title">%1$d runner(s) out of date</string>
-    <string name="runner_skew_summary_body">Upgrade the HAPI CLI on each host below, then restart that runner. Minimize or snooze this banner to reach sessions underneath.</string>
+    <string name="runner_skew_summary_body">Upgrade the Kestrel CLI on each host below, then restart that runner. Minimize or snooze this banner to reach sessions underneath.</string>
     <string name="runner_skew_minimized">%1$d outdated runner(s): %2$s — tap to expand</string>
     <string name="runner_skew_minimize">Minimize</string>
     <string name="runner_skew_dismiss_temp">Snooze 1h</string>

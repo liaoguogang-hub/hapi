@@ -246,7 +246,7 @@ export function LoginPrompt(props: LoginPromptProps) {
             {/* Footer */}
             <div className="absolute bottom-4 left-0 right-0 text-center text-xs text-[var(--app-hint)] space-y-1">
                 <div>{t('login.footer')} <span className="text-red-500">♥</span> {t('login.footer.for')}</div>
-                <div>{t('login.footer.copyright')} {new Date().getFullYear()} HAPI</div>
+                <div>{t('login.footer.copyright')} {new Date().getFullYear()} Kestrel</div>
             </div>
         </div>
     )

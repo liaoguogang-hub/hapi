@@ -151,7 +151,7 @@ function createHapiMcpServer(
     };
 
     const mcp = new McpServer({
-        name: "HAPI MCP",
+        name: "Kestrel MCP",
         version: "1.0.0",
     });
 

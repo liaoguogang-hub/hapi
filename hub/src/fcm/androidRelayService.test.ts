@@ -57,7 +57,7 @@ describe('Android relay fan-out', () => {
         expect(JSON.parse(text)).toEqual(payload.data)
         const minimal = androidRelayPlaintext({ ...largeSummary, body: '😀'.repeat(4000), title: '大'.repeat(4000) })!
         expect(JSON.parse(minimal)).toEqual({ type: 'permission-request', sessionId: 's1', requestId: 'r1',
-            contractVersion: '1', title: 'HAPI', body: 'New activity' })
+            contractVersion: '1', title: 'Kestrel', body: 'New activity' })
         expect(encryptEnvelope(Buffer.alloc(32), minimal).length).toBeLessThanOrEqual(MAX_ANDROID_RELAY_ENVELOPE_BYTES)
         expect(androidRelayPlaintext({ ...largeSummary, sessionId: 's'.repeat(4000) })).toBeNull()
     })

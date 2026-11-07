@@ -69,7 +69,7 @@ export default function hapiTitleExtension(pi) {
         name: 'hapi_display_image',
         label: 'Display Image',
         promptSnippet: 'Show a local image to the user in the HAPI chat.',
-        description: "Display a local image file to the human user inline in the current HAPI chat session. Call it when the user asks to view a local image, screenshot, or diagram. The image is shown in the chat; note it also enters the model context, so prefer reading the file for analysis and this tool for presentation.",
+        description: "Display a local image file to the human user inline in the current Kestrel chat session. Call it when the user asks to view a local image, screenshot, or diagram. The image is shown in the chat; note it also enters the model context, so prefer reading the file for analysis and this tool for presentation.",
         parameters: Type.Object({
             path: Type.String({ description: 'Absolute filesystem path of the local image to display (png, jpeg, gif or webp, up to 25 MiB).' })
         }),

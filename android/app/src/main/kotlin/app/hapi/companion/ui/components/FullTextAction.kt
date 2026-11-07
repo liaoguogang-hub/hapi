@@ -39,7 +39,7 @@ internal fun FullTextAction(source: String, compact: Boolean = false) {
     val action: () -> Unit = {
         if (!export) {
             copyFailed = runCatching {
-                context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("HAPI", source))
+                context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Kestrel", source))
             }.isFailure
             copied = !copyFailed
         } else {
@@ -55,7 +55,7 @@ internal fun FullTextAction(source: String, compact: Boolean = false) {
                     val send = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_STREAM, uri)
-                        clipData = ClipData.newRawUri("HAPI", uri)
+                        clipData = ClipData.newRawUri("Kestrel", uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
                     context.startActivity(Intent.createChooser(send, null))

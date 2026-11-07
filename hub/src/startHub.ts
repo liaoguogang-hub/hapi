@@ -108,7 +108,7 @@ export interface StartHubOptions {
 }
 
 export async function startHub(options: StartHubOptions = {}): Promise<HubInstance> {
-    console.log('HAPI Hub starting...')
+    console.log('Kestrel Hub starting...')
 
     let syncEngine: SyncEngine | null = null
     let happyBot: HappyBot | null = null
@@ -368,7 +368,7 @@ export async function startHub(options: StartHubOptions = {}): Promise<HubInstan
             })
             const companionDeeplink = `hapicompanion://bind?${companionParams.toString()}`
             console.log('')
-            console.log('Or pair the HAPI companion app (iOS / Android / Wear OS):')
+            console.log('Or pair the Kestrel companion app (iOS / Android / Wear OS):')
             console.log(`  ${companionDeeplink}`)
             try {
                 const companionQrString = await QRCode.toString(companionDeeplink, {
@@ -387,7 +387,7 @@ export async function startHub(options: StartHubOptions = {}): Promise<HubInstan
         void announceTunnelAccess()
     }
     console.log('')
-    console.log('HAPI Hub is ready!')
+    console.log('Kestrel Hub is ready!')
 
     return {
         stop: async () => {

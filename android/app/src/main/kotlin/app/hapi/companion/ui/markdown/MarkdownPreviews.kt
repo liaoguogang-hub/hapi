@@ -77,7 +77,7 @@ fun greet(name: String): String {
 
 ```mermaid
 flowchart LR
-    Prompt[User prompt] --> Agent[HAPI agent]
+    Prompt[User prompt] --> Agent[Kestrel agent]
     Agent --> Review{Approved?}
     Review -- yes --> Ship[Ship it]
     Review -- no --> Agent

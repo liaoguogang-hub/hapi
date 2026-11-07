@@ -20,7 +20,7 @@ export function buildSessionReferenceText(sessionTitle: string, sessionId: strin
     const title = sanitizeSessionReferenceTitle(sessionTitle)
     const base = title
         ? `See session ${JSON.stringify(title)} (${path}) for context`
-        : `See HAPI session ${path} for context`
+        : `See Kestrel session ${path} for context`
     return `${base}.${SESSION_REFERENCE_STEER_SUFFIX}`
 }
 

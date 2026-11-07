@@ -79,7 +79,7 @@ describe('PwaUpdateBanner', () => {
 
         expect(screen.getByTestId('pwa-update-banner')).toBeInTheDocument()
         expect(screen.getByText('New version available')).toBeInTheDocument()
-        expect(screen.getByText('Reload to get the latest HAPI')).toBeInTheDocument()
+        expect(screen.getByText('Reload to get the latest Kestrel')).toBeInTheDocument()
         expect(screen.getAllByRole('button')).toHaveLength(1)
 
         fireEvent.click(screen.getByRole('button', { name: 'Reload' }))
