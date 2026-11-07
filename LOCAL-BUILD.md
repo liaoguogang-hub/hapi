@@ -1,6 +1,14 @@
-# Local build of the HAPI Android app
+# Local build of the Kestrel Android app
 
-This repository is a local fork of [`tiann/hapi`](https://github.com/tiann/hapi).
+This repository is a local fork of [`tiann/hapi`](https://github.com/tiann/hapi), pushed to
+`liaoguogang-hub/hapi` (remote `fork`; `upstream` points at `tiann/hapi`).
+
+The user-facing product name is **Kestrel**. The application id
+(`run.hapi.companion`), the Kotlin/iOS package namespaces, the
+`hapicompanion://` deep-link scheme, the `HAPI_*` environment variables and
+the `hapi` CLI binary name are unchanged upstream identifiers and stay as they
+are — the rename is cosmetic and reversible.
+
 It tracks one upstream commit and carries a small, self-contained patch that
 adds model pickers the upstream Android client does not have.
 
@@ -10,7 +18,7 @@ adds model pickers the upstream Android client does not have.
 | Baseline tag | `upstream-2741217` (branch `upstream-base`) |
 | Local branch | `main` |
 | Application ID | `run.hapi.companion` |
-| Current version | `0.34.3+local.1` (`hapiVersionCode=298943511`) |
+| Current version | `0.34.3+local.3` (`hapiVersionCode=298943513`) |
 
 ## What the patch does
 
@@ -52,8 +60,8 @@ android/app/.../feature/newsession/NewSession*.kt    new-session form
 Both values live in `android/gradle.properties`:
 
 ```properties
-hapiVersionName=0.34.3+local.1
-hapiVersionCode=298943511
+hapiVersionName=0.34.3+local.3
+hapiVersionCode=298943513
 ```
 
 - `hapiVersionName` — upstream's release string plus a `+local.N` marker, where
@@ -68,8 +76,8 @@ hapiVersionCode=298943511
 **To cut a new local release:** bump `N` and the code together.
 
 ```properties
-hapiVersionName=0.34.3+local.2
-hapiVersionCode=298943512
+hapiVersionName=0.34.3+local.4
+hapiVersionCode=298943514
 ```
 
 ## Building
