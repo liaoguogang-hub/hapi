@@ -246,6 +246,11 @@ export function mapKimiWireToMessages(
     return messages
 }
 
+/** Collapses whitespace so a multi-line prompt does not wrap the phone's list row. */
+function toTitle(value: string, limit = 60): string {
+    return value.replace(/\s+/g, ' ').trim().slice(0, limit).trim()
+}
+
 /** Reads one session's transcript and packages it for the hub import route. */
 export async function readKimiImportSession(summary: KimiSessionSummary): Promise<KimiImportSession> {
     const state = await readState(summary.sessionDir)
@@ -257,9 +262,10 @@ export async function readKimiImportSession(summary: KimiSessionSummary): Promis
     // instead of an opaque id.
     const firstUser = messages.find((message) => message.content.role === 'user')
     const firstUserText = firstUser && firstUser.content.role === 'user'
-        ? firstUser.content.content.text.trim().slice(0, 60)
+        ? toTitle(firstUser.content.content.text)
         : ''
-    const title = summary.title || firstUserText || `Kimi ${summary.id.replace(/^session_/, '').slice(0, 8)}`
+    const title = toTitle(summary.title) || firstUserText
+        || `Kimi ${summary.id.replace(/^session_/, '').slice(0, 8)}`
     return {
         kimiSessionId: summary.id,
         title,
