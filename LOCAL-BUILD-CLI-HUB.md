@@ -251,10 +251,11 @@ APK 显示标题走 `metadata.name` → `metadata.summary.text` →
 
 ## 9. 已知限制
 
-1. **导入不是自动的。** 桌面端新开的会话要出现在 APK 里，得重跑
-   `dsh-import --all`。要自动化就加个计划任务。
-2. **30/40 个会话没有可导入内容。** 这些会话只有系统注入、没有用户
-   消息，Host 侧 `blank: true` 或无 `user/message` 事件。
+1. **7 个会话始终导不进来。** 它们的 `session/projections` 返回 `ok: true`
+   但没有 `asOfSeq`，没有序号水位就读不出事件流，导入报
+   `DSH did not report a head seq`。是这些会话本身没有可枚举的历史。
+2. **大量会话没有可导入内容。** `D:\KimiCode` 40 个里只有 7 个有用户消息，
+   其余只有系统注入，Host 侧 `blank: true` 或无 `user/message` 事件。
 3. **占用中的会话接不了。** 桌面端正开着的会话，ACP 返回
    `already owned by an active write handle`，hapi 会**静默新建**一个
    会话而不是报错。导入路由本身有守卫，拒绝向已有 live-agent 消息的
@@ -264,3 +265,38 @@ APK 显示标题走 `metadata.name` → `metadata.summary.text` →
    端点——反向同步靠共享存储，不靠回写。
 5. **tunwg 隧道功能未验证。** 二进制是从 0.34.3 借来的，版本可能不匹配。
    本机对外入口走 Tailscale Serve，不依赖 tunwg。
+
+## 10. 部署（2026-11-08 已上线）
+
+`0.34.3+local.2` 已替换掉 npm 全局的 `hapi.exe`，版本自证：
+
+```powershell
+hapi --version      # hapi version: 0.34.3+local.2
+```
+
+部署脚本在 `C:\Users\guoga\Documents\DSH\deploy\`（独立 git 仓库，
+tag `deploy-v0.34.3+local.2`）：
+
+| 脚本 | 作用 |
+|---|---|
+| `verify.ps1` | 只读体检：版本、健康、导入路由、会话数、任务状态 |
+| `deploy.ps1` | 停看门狗 → 停任务 → 备份 → 换二进制 → 启任务 → 验证，失败自动回滚 |
+| `post-deploy.ps1` | 立即导入一次 + 注册 `HAPI DSH Sync` |
+| `dsh-sync.ps1` | 每 10 分钟跑一次的导入 |
+| `rollback.ps1` | 还原二进制（可选数据库） |
+
+**只换一个文件就够**：`HAPI Hub` 和 `HAPI Runner` 都通过 `hapi.cmd` 启动，
+落到同一个 `hapi.exe`；这个自包含二进制里装着 hub、runner、Web 前端和导入功能。
+
+上线后的实测：
+
+| 项 | 值 |
+|---|---|
+| 会话总数 | 99（16 原有 + 83 导入） |
+| 消息总数 | 48570 |
+| DSH 会话 | 87，其中 83 条 `lifecycleState=imported` |
+| 重复导入 | 0（`dshSessionId` 无重复分组） |
+| 同步任务 | 每 10 分钟，实测增量 `0~3 messages appended` |
+
+备份在 `~/.hapi/deploy-backups/`（`hapi.exe.<时间戳>` 与 `hapi.db.<时间戳>`）。
+
