@@ -328,3 +328,44 @@ tag `deploy-v0.34.3+local.2`）：
 | `D:\KimiCode\LOCAL-BUILD.md` | 机器运维文档已同步更新 |
 
 
+
+## 12. Kimi Code 历史导入（0.34.3+local.3 / local.4）
+
+和 DSH 不同，kimi-code 没有本地 Host RPC。CLI 直接读存储：
+
+```
+~/.kimi-code/sessions/wd_<workspace>/session_<uuid>/
+    state.json                 标题、cwd、archived、时间戳
+    agents/main/wire.jsonl     逐条 journal
+```
+
+只取 `agent.message.appended`（已完成消息）。流式的
+`context.append_loop_event` 会把一条回复拆成很多碎片，不能直接用；工具调用和
+kimi 注入的 `<system-reminder>` 一并丢弃。`session_index.jsonl` 是派生缓存、可能
+滞后，所以枚举走目录扫描。
+
+| 位置 | 内容 |
+|---|---|
+| `shared/src/apiTypes.ts` | `KimiImport*` / `ImportKimiSessions*` 类型 |
+| `cli/src/modules/common/kimiSessions.ts` | 枚举 + wire 解析 + 打包成导入负载 |
+| `cli/src/commands/kimiImport.ts` | `hapi kimi-import` |
+| `hub/src/web/routes/kimiImport.ts` | `POST /cli/kimi/import` |
+
+追加/去重保证与 DSH 完全一致：按 `kimi:<id>:<序号>` 前缀比对已存消息，只追加尾部；
+遇到已有 hapi 实时消息则拒绝。
+
+### 必须记住的一个服务端 bug
+
+编译产物里，给长消息建 FTS5 索引会失败：
+
+```
+SQLiteError: unable to open database file
+    at insertMessageContentSearchIndex
+```
+
+原因：FTS5 建索引需要往 SQLite 的临时目录写盘，而打包后的 exe 里那个路径打不开。
+`bun` 跑源码版却正常，所以这不是数据或逻辑问题。修复是
+`hub/src/store/index.ts` 加一行 `PRAGMA temp_store = MEMORY`。
+
+症状特征：小会话能导、大会话（长文本或几十条以上）失败，且只在 exe 上出现。
+以后再加类似「批量写入 + 全文索引」的功能，记得这条已经修好的前提。
