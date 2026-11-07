@@ -252,7 +252,14 @@ export async function readKimiImportSession(summary: KimiSessionSummary): Promis
     const records = await readWireRecords(summary.sessionDir)
     const updatedAt = asNumber(state?.updatedAt) ?? summary.updatedAt
     const messages = mapKimiWireToMessages(summary.id, records, updatedAt)
-    const title = summary.title || `Kimi ${summary.id.replace(/^session_/, '').slice(0, 8)}`
+    // A session that was never named and never had a prompt recorded still has
+    // its first user turn; use it so the phone's list shows something readable
+    // instead of an opaque id.
+    const firstUser = messages.find((message) => message.content.role === 'user')
+    const firstUserText = firstUser && firstUser.content.role === 'user'
+        ? firstUser.content.content.text.trim().slice(0, 60)
+        : ''
+    const title = summary.title || firstUserText || `Kimi ${summary.id.replace(/^session_/, '').slice(0, 8)}`
     return {
         kimiSessionId: summary.id,
         title,
