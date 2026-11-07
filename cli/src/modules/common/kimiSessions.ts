@@ -101,10 +101,13 @@ async function readState(sessionDir: string): Promise<JsonRecord | null> {
 function summaryFrom(sessionDir: string, state: JsonRecord): KimiSessionSummary | null {
     const id = asString(state.id) ?? sessionDir.split(/[\\/]/).pop() ?? null
     if (!id) return null
-    const title = asString(state.title) ?? asString(state.lastPrompt) ?? ''
+    // kimi-code only titles a session once it has generated one; until then the
+    // desktop shows the last prompt. `id.slice(0, 8)` is useless here because
+    // every id starts with `session_`.
+    const title = (asString(state.title) ?? '').trim() || (asString(state.lastPrompt) ?? '').trim()
     return {
         id,
-        title: title.trim(),
+        title,
         cwd: asString(state.cwd),
         updatedAt: asNumber(state.updatedAt) ?? 0,
         archived: state.archived === true,
@@ -249,7 +252,7 @@ export async function readKimiImportSession(summary: KimiSessionSummary): Promis
     const records = await readWireRecords(summary.sessionDir)
     const updatedAt = asNumber(state?.updatedAt) ?? summary.updatedAt
     const messages = mapKimiWireToMessages(summary.id, records, updatedAt)
-    const title = summary.title || `Kimi ${summary.id.slice(0, 8)}`
+    const title = summary.title || `Kimi ${summary.id.replace(/^session_/, '').slice(0, 8)}`
     return {
         kimiSessionId: summary.id,
         title,
