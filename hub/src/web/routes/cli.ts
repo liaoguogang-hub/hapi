@@ -4,28 +4,18 @@ import {
     CreateOrLoadMachineRequestSchema,
     CreateOrLoadSessionRequestSchema,
     ClearOpencodeSessionCallbackRequestSchema,
-    CursorMigrateToAcpRequestSchema,
-    PROTOCOL_VERSION
+    CursorMigrateToAcpRequestSchema
 } from '@hapi/protocol'
 import { getConfiguration } from '../../configuration'
 import { readSessionSummaryContractEnabled } from '../../config/sessionSummaryContract'
-import { constantTimeEquals } from '../../utils/crypto'
-import { parseAccessToken } from '../../utils/accessToken'
 import type { Machine, Session, SyncEngine } from '../../sync/syncEngine'
 import { SessionIdentityConflictError, SessionNotAdoptableError } from '../../store/sessions'
-
-const bearerSchema = z.string().regex(/^Bearer\s+(.+)$/i)
+import { requireCliAuth, type CliEnv } from '../middleware/cliAuth'
 
 const getMessagesQuerySchema = z.object({
     afterSeq: z.coerce.number().int().min(0),
     limit: z.coerce.number().int().min(1).max(200).optional()
 })
-
-type CliEnv = {
-    Variables: {
-        namespace: string
-    }
-}
 
 function resolveSessionForNamespace(
     engine: SyncEngine,
@@ -68,29 +58,7 @@ function clearErrorStatus(code: string): 403 | 404 | 409 | 500 {
 export function createCliRoutes(getSyncEngine: () => SyncEngine | null): Hono<CliEnv> {
     const app = new Hono<CliEnv>()
 
-    app.use('*', async (c, next) => {
-        c.header('X-Hapi-Protocol-Version', String(PROTOCOL_VERSION))
-
-        const raw = c.req.header('authorization')
-        if (!raw) {
-            return c.json({ error: 'Missing Authorization header' }, 401)
-        }
-
-        const parsed = bearerSchema.safeParse(raw)
-        if (!parsed.success) {
-            return c.json({ error: 'Invalid Authorization header' }, 401)
-        }
-
-        const token = parsed.data.replace(/^Bearer\s+/i, '')
-        const configuration = getConfiguration()
-        const parsedToken = parseAccessToken(token)
-        if (!parsedToken || !constantTimeEquals(parsedToken.baseToken, configuration.cliApiToken)) {
-            return c.json({ error: 'Invalid token' }, 401)
-        }
-
-        c.set('namespace', parsedToken.namespace)
-        return await next()
-    })
+    app.use('*', requireCliAuth)
 
     app.post('/sessions', async (c) => {
         const engine = getSyncEngine()

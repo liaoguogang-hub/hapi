@@ -308,6 +308,30 @@ directories. Since the ACP composition accepts no client-supplied MCP servers,
 HAPI's `skill_lookup` bridge is not available to DSH sessions; a skill named in
 the prompt is loaded by DSH through its own `skill` tool and catalog.
 
+### Import DSH desktop history
+
+Sessions created in the DSH desktop app are stored in the desktop Host's own
+log, not in the hub. `hapi dsh-import` reads that log from the running Host and
+writes it into HAPI, so those conversations become readable in the web and
+phone session lists (they import with their original timestamps and are not
+resumed unless you send a new message):
+
+```bash
+hapi dsh-import                     # list DSH sessions
+hapi dsh-import 3                   # import by index
+hapi dsh-import --all               # import every non-blank session
+hapi dsh-import --cwd D:\project    # only one workspace
+```
+
+The command discovers the Host's random port on this machine, mints the
+Host-scoped browser cookie from `~/.dsh/.credentials.yaml`, and pages the
+durable event log (`session/list` → `session/projections` → `session/page`).
+`HAPI_DSH_HOST_URL` and `HAPI_DSH_HOST_COOKIE` override discovery for a Host
+reached through a bridge or tunnel. Re-running the command is safe: imported
+entries are matched by their DSH event sequence, and a session that already has
+HAPI-recorded live messages is left alone rather than reordered. A session the
+Host is still writing is imported from a consistent cut taken at read time.
+
 ## Other agents
 
 - **Claude Code** (`hapi claude`) — local sessions wrap the native TUI, remote sessions drive the Claude Agent SDK. [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code)

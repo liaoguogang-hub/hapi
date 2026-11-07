@@ -374,6 +374,56 @@ export type OpencodeLocalSessionWithMessages = z.infer<typeof OpencodeLocalSessi
 export type ListOpencodeSessionsRpcRequest = z.infer<typeof ListOpencodeSessionsRpcRequestSchema>
 export type ListOpencodeSessionsRpcResponse = z.infer<typeof ListOpencodeSessionsRpcResponseSchema>
 
+/**
+ * DeepSeek Harness history imported from the desktop Host.
+ *
+ * The CLI reads the Host's durable event log (`session/list` → `session/projections`
+ * → `session/page`) and posts the mapped transcript to the hub, which stores it with
+ * the original event times and emits it like any other session message.
+ */
+export const DshImportedMessageContentSchema = CodexImportedMessageSchema
+
+export const DshImportedMessageSchema = z.object({
+    localId: z.string().min(1),
+    createdAt: z.number(),
+    content: DshImportedMessageContentSchema
+})
+
+export const DshImportSessionSchema = z.object({
+    dshSessionId: z.string().min(1),
+    title: z.string(),
+    cwd: z.string().nullable().optional(),
+    updatedAt: z.number(),
+    messages: z.array(DshImportedMessageSchema)
+})
+
+export const MAX_DSH_SESSION_IMPORTS = 50
+
+export const ImportDshSessionsRequestSchema = z.object({
+    machineId: z.string().min(1),
+    sessions: z.array(DshImportSessionSchema).min(1).max(MAX_DSH_SESSION_IMPORTS)
+})
+
+export const DshImportResultSchema = z.object({
+    dshSessionId: z.string(),
+    hapiSessionId: z.string().optional(),
+    action: z.enum(['created', 'updated', 'unchanged']).optional(),
+    appended: z.number().optional(),
+    error: z.object({ code: z.string(), message: z.string() }).optional()
+})
+
+export const ImportDshSessionsResponseSchema = z.object({
+    success: z.boolean(),
+    results: z.array(DshImportResultSchema)
+})
+
+export type DshImportedMessageContent = z.infer<typeof DshImportedMessageContentSchema>
+export type DshImportedMessage = z.infer<typeof DshImportedMessageSchema>
+export type DshImportSession = z.infer<typeof DshImportSessionSchema>
+export type ImportDshSessionsRequest = z.infer<typeof ImportDshSessionsRequestSchema>
+export type DshImportResult = z.infer<typeof DshImportResultSchema>
+export type ImportDshSessionsResponse = z.infer<typeof ImportDshSessionsResponseSchema>
+
 export const SessionCollaborationModeRequestSchema = z.object({
     mode: CodexCollaborationModeSchema
 })

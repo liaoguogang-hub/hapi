@@ -2,6 +2,8 @@ import axios from 'axios'
 import type { AgentState, ClearOpencodeSessionCallbackRequest, ClearOpencodeSessionResponse, CreateMachineResponse, CreateSessionResponse, RunnerState, Machine, MachineMetadata, Metadata, Session } from '@/api/types'
 import { applyHubSessionSummaryContract } from '@/modules/common/sessionSummaryInstruction'
 import type { LocalResumeTarget, ResumableSession } from '@hapi/protocol'
+import { ImportDshSessionsResponseSchema } from '@hapi/protocol/apiTypes'
+import type { ImportDshSessionsRequest, ImportDshSessionsResponse } from '@hapi/protocol/apiTypes'
 import {
     AgentStateSchema,
     ClearOpencodeSessionResponseSchema,
@@ -283,6 +285,32 @@ export class ApiClient {
         if (!parsed.success || !parsed.data.ok) {
             throw apiValidationError('Invalid /cli/sessions/:id/handoff-local response', response)
         }
+    }
+
+    /**
+     * Persist DSH desktop history into this namespace's hub store.
+     * The hub appends with the original event times, so the phone sees the
+     * conversation in the order the desktop recorded it.
+     */
+    async importDshSessions(request: ImportDshSessionsRequest): Promise<ImportDshSessionsResponse> {
+        const response = await axios.post(
+            `${configuration.apiUrl}/cli/dsh/import`,
+            request,
+            {
+                headers: this.authHeaders(),
+                timeout: 10 * 60_000
+            }
+        ).catch((error: unknown) => {
+            if (axios.isAxiosError(error) && error.response?.status === 404) {
+                throw new Error('The hub does not expose /cli/dsh/import yet; restart it with this HAPI build.')
+            }
+            throw error
+        })
+        const parsed = ImportDshSessionsResponseSchema.safeParse(response.data)
+        if (!parsed.success) {
+            throw apiValidationError('Invalid /cli/dsh/import response', response)
+        }
+        return parsed.data
     }
 
     async clearOpenCodeSession(sessionId: string): Promise<string> {

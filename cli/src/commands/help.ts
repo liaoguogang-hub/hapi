@@ -18,6 +18,7 @@ ${agents}
 Commands:
   hapi auth                  Manage authentication
   hapi resume [id]           Choose or resume an existing HAPI session
+  hapi dsh-import [id]       Import DeepSeek Harness desktop history
   hapi hub [--relay]         Start the API + web hub
   hapi server                Alias for hapi hub
   hapi runner                Manage the background runner
