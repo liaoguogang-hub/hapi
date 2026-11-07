@@ -185,6 +185,14 @@ bun scripts/write-manifest.ts --dist dist/<version> --version <version> --repo .
 当前本地版本：`0.34.3+local.1`。Android 侧是 `0.34.3+local.7`，两者独立
 计数。
 
+Tag 约定：
+
+| tag | 指向 |
+|---|---|
+| `v0.34.3-local.N` | Android APK 构建 |
+| `hub-cli-v0.34.3+local.N` | hub + CLI 构建 |
+| `upstream-2741217` | 上游基线 commit |
+
 版本号规则沿用仓库自带的 `cli/scripts/release-version.ts`（它同步
 `cli/package.json`、`shared/src/buildInfo.ts`、iOS 与 Android 四处）。该脚本
 会要求 `android/` 与 `ios/` 存在；只构建 CLI/hub 时手工改前两处即可。
