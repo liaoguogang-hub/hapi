@@ -31,12 +31,17 @@ import app.hapi.companion.ui.theme.hapi
  * Brand logo per agent flavor — port of `web/src/components/AgentFlavorIcon.tsx`
  * (brand SVGs via @lobehub/icons, the same source the web ships).
  *
- * Color variants (agy/claude/codex/dsh/gemini) keep their literal brand fills and
+ * Color variants (agy/claude/codex/gemini) keep their literal brand fills and
  * render untinted so they stay visible on both light and dark surfaces — the
  * reason the web picked Color for them. Mono variants (cursor/grok/kimi/
  * opencode/pi) are currentColor upstream and tint with [LocalContentColor];
  * copilot mirrors the web's fixed GitHub-mark tint (#24292F light /
  * #E6EDF3 dark). Unknown flavors fall back to the web's "Un" badge.
+ *
+ * dsh is a mono variant here even though the web uses its Color one: the
+ * brand-blue whale reads as an indistinct blob at 16dp in the picker, so it
+ * ships the monochrome mark tinted with the content color instead — black on
+ * light surfaces, near-white on dark ones.
  */
 @Composable
 fun AgentFlavorIcon(flavor: String?, modifier: Modifier = Modifier.size(16.dp)) {
@@ -85,12 +90,12 @@ private val COLOR_FLAVOR_ICONS: Map<String, Int> = mapOf(
     "agy" to R.drawable.ic_agent_agy,
     "claude" to R.drawable.ic_agent_claude,
     "codex" to R.drawable.ic_agent_codex,
-    "dsh" to R.drawable.ic_agent_deepseek,
     "gemini" to R.drawable.ic_agent_gemini,
 )
 
 private val MONO_FLAVOR_ICONS: Map<String, Int> = mapOf(
     "cursor" to R.drawable.ic_agent_cursor,
+    "dsh" to R.drawable.ic_agent_deepseek,
     "grok" to R.drawable.ic_agent_grok,
     "kimi" to R.drawable.ic_agent_kimi,
     "opencode" to R.drawable.ic_agent_opencode,
