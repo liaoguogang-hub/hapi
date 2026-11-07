@@ -300,3 +300,31 @@ tag `deploy-v0.34.3+local.2`）：
 
 备份在 `~/.hapi/deploy-backups/`（`hapi.exe.<时间戳>` 与 `hapi.db.<时间戳>`）。
 
+### 上线后补的一个坑：runner 的工作区根
+
+导入之后 APK 能看到对话，但发消息报
+`Directory is outside this machine's workspace roots`。
+
+`HAPI Runner` 任务只注册了 `--workspace-root "D:\KimiCode"`，而导入的 78 个会话
+都在 `C:\Users\guoga\Documents\DSH`。runner 的
+`MachinePathPolicy.isWithinSpawnRoots` 是硬性检查，第二个根必须真的在启动参数里。
+（`isWithinBrowseRoots` 直接复用 spawn 的那份列表，所以浏览和 spawn 同源。）
+
+任务改不动：`schtasks /Change /TR` 要密码，`Set-ScheduledTask` 报
+`0x80070005`，`schtasks /Create` 重建会丢电池/重试设置。最终在
+`%APPDATA%\npm\hapi.cmd` 这层注入第二个根 —— 详见
+`C:\Users\guoga\Documents\DSH\deploy\README.md` 的「工作区根」一节。
+
+## 11. 本次改动涉及的文件
+
+| 位置 | 内容 |
+|---|---|
+| `D:\hapi-main` | 只读源仓库，未改动（保留 upstream 基线） |
+| `~` 下的 `build` 工作副本 | 版本号、两个构建脚本、本文档 |
+| `C:\Users\guoga\Documents\DSH\kestrel-build\` | 构建产物 + manifest |
+| `C:\Users\guoga\Documents\DSH\deploy\` | 部署/回滚/同步/根配置脚本（独立 git） |
+| `%APPDATA%\npm\hapi.exe` 所在目录 | 被替换的二进制 |
+| `%APPDATA%\npm\hapi.cmd` | runner 根注入包装（原版存为 `hapi.cmd.npm-original`） |
+| `D:\KimiCode\LOCAL-BUILD.md` | 机器运维文档已同步更新 |
+
+
