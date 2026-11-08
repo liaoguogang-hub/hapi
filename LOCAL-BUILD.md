@@ -18,7 +18,7 @@ adds model pickers the upstream Android client does not have.
 | Baseline tag | `upstream-2741217` (branch `upstream-base`) |
 | Local branch | `main` |
 | Application ID | `run.hapi.companion` |
-| Current version | `0.34.3+local.8` (`hapiVersionCode=298943519`) |
+| Current version | `0.34.3+local.10` (`hapiVersionCode=298943520`) |
 
 ## What the patch does
 
@@ -55,33 +55,44 @@ android/app/.../feature/newsession/NewSession*.kt    new-session form
 + three test files
 ```
 
-### Navigation patch (`0.34.3+local.8`)
+### Navigation patch (`0.34.3+local.10`)
 
-Three gaps reported from the phone:
+Three gaps reported from the phone, all modelled on the DSH remote app
+(`~/Documents/DSH/DshRemote`), whose drawer *is* the conversation browser:
 
-- **Agent drawer** — `ModalNavigationDrawer` opened by a hamburger in the top
-  bar. One row per agent flavor with its session count, plus "All agents". The
-  choice is a new agent filter in `SessionListViewModel`, derived from all
-  sessions before filtering so it cannot hide its own alternatives.
-- **Archived toggle** — the same drawer carries a "Show archived" switch.
-  Sessions with `metadata.lifecycleState = archived` are now hidden by default
-  and the switch brings them back. Calendar activity hints derive from the
-  archive-filtered corpus, so a day whose only sessions are archived no longer
-  lights up with an empty list.
-- **Turn navigation** — matches the DSH remote app: a numbered turn list from
-  the chat top bar (tap to jump) and a rail of ticks down the right edge that
-  can be tapped or scrubbed. Turns are derived from user text blocks because
-  hapi records no turn boundaries for imported or agent-authored history;
-  jumping clears follow-the-tail so the viewport is not pulled back to the
-  newest message.
+- **Drawer with agent grouping** — a hamburger opens a `ModalNavigationDrawer`
+  that lists conversations grouped per agent, each group collapsible and
+  captioned with the agent mark, its label and its count. Tapping a row opens
+  that conversation and closes the drawer. DSH groups by workspace because its
+  host serves a single agent; a Kestrel hub mixes several, so the groups are
+  agents. Groups are ordered by size, rows keep the list's ordering.
+- **Archived filter** — the drawer's view-options menu offers DSH's three
+  states: hide archived (default), show everything, only archived. Sessions
+  with `metadata.lifecycleState = archived` were listed unconditionally before.
+  The filter runs before the calendar hints, so a day whose only sessions are
+  archived does not light up with an empty list. It also governs the main list,
+  not just the drawer.
+- **Turn navigation** — a numbered turn list from the chat top bar (tap to
+  jump) plus a rail of ticks down the right edge that can be tapped or
+  scrubbed. Turns derive from user text blocks because hapi records no turn
+  boundaries for imported or agent-authored history; jumping clears
+  follow-the-tail so the viewport is not pulled back to the newest message.
+
+Two behaviour notes that came out of device testing:
+
+- Material3's `ModalNavigationDrawer` does not consume the system Back gesture.
+  Without an explicit `BackHandler` (enabled while the drawer is open) Back
+  exits the app instead of closing the drawer.
+- The drawer search field writes the same query as the top-bar search, so the
+  drawer and the list never disagree about what is filtered.
 
 ```
-android/app/.../feature/home/AgentDrawer.kt          new: drawer content
+android/app/.../feature/home/SessionDrawer.kt        new: grouped browser
 android/app/.../feature/chat/TurnNavigation.kt       new: turn list + rail
-android/app/.../feature/home/HomeScreen.kt           drawer wiring
+android/app/.../feature/home/HomeScreen.kt           drawer + Back handling
 android/app/.../feature/home/HomeTopBar.kt           hamburger
 android/app/.../feature/chat/ChatScreen.kt           turn entry + rail
-android/app/.../feature/sessions/SessionListViewModel.kt  agent/archived filters
+android/app/.../feature/sessions/SessionListViewModel.kt  agent groups, archived tri-state
 android/app/src/main/res/values{,-zh-rCN}/strings.xml     new labels
 ```
 
@@ -90,8 +101,8 @@ android/app/src/main/res/values{,-zh-rCN}/strings.xml     new labels
 Both values live in `android/gradle.properties`:
 
 ```properties
-hapiVersionName=0.34.3+local.9
-hapiVersionCode=298943519
+hapiVersionName=0.34.3+local.10
+hapiVersionCode=298943520
 ```
 
 - `hapiVersionName` — upstream's release string plus a `+local.N` marker, where

@@ -67,15 +67,23 @@ fun HomeScreen(
         drawerState = drawerState,
         gesturesEnabled = !searchExpanded,
         drawerContent = {
-            AgentDrawer(
-                agents = state.agents,
-                activeAgent = state.activeAgent,
-                showArchived = state.showArchived,
-                onSelectAgent = { agent ->
-                    viewModel.selectAgent(agent)
+            SessionDrawer(
+                activeHubUrl = activeHubUrl,
+                groups = state.agentGroups,
+                archivedFilter = state.archivedFilter,
+                searchQuery = state.searchQuery,
+                onSearchQueryChange = viewModel::setSearchQuery,
+                onArchivedFilterChange = viewModel::setArchivedFilter,
+                onOpenSession = { sessionId ->
                     scope.launch { drawerState.close() }
+                    onOpenSession(sessionId)
                 },
-                onShowArchivedChange = viewModel::setShowArchived,
+                onNewSession = onNewSession?.let { openNew ->
+                    {
+                        scope.launch { drawerState.close() }
+                        openNew()
+                    }
+                },
             )
         },
     ) {
