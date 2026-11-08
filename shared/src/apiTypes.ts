@@ -476,6 +476,57 @@ export type ImportKimiSessionsRequest = z.infer<typeof ImportKimiSessionsRequest
 export type KimiImportResult = z.infer<typeof KimiImportResultSchema>
 export type ImportKimiSessionsResponse = z.infer<typeof ImportKimiSessionsResponseSchema>
 
+/**
+ * Claude Code history imported from the local transcript store.
+ *
+ * Claude Code (CLI and the VS Code extension) writes one JSONL transcript per
+ * session under `~/.claude/projects/<slug>/<sessionId>.jsonl`. The CLI reads
+ * those files and posts the mapped transcript here; same wire shape and the
+ * same append-only guarantees as the DSH and Kimi imports.
+ */
+export const ClaudeImportedMessageContentSchema = CodexImportedMessageSchema
+
+export const ClaudeImportedMessageSchema = z.object({
+    localId: z.string().min(1),
+    createdAt: z.number(),
+    content: ClaudeImportedMessageContentSchema
+})
+
+export const ClaudeImportSessionSchema = z.object({
+    claudeSessionId: z.string().min(1),
+    title: z.string(),
+    cwd: z.string().nullable().optional(),
+    updatedAt: z.number(),
+    messages: z.array(ClaudeImportedMessageSchema)
+})
+
+export const MAX_CLAUDE_SESSION_IMPORTS = 50
+
+export const ImportClaudeSessionsRequestSchema = z.object({
+    machineId: z.string().min(1),
+    sessions: z.array(ClaudeImportSessionSchema).min(1).max(MAX_CLAUDE_SESSION_IMPORTS)
+})
+
+export const ClaudeImportResultSchema = z.object({
+    claudeSessionId: z.string(),
+    hapiSessionId: z.string().optional(),
+    action: z.enum(['created', 'updated', 'unchanged']).optional(),
+    appended: z.number().optional(),
+    error: z.object({ code: z.string(), message: z.string() }).optional()
+})
+
+export const ImportClaudeSessionsResponseSchema = z.object({
+    success: z.boolean(),
+    results: z.array(ClaudeImportResultSchema)
+})
+
+export type ClaudeImportedMessageContent = z.infer<typeof ClaudeImportedMessageContentSchema>
+export type ClaudeImportedMessage = z.infer<typeof ClaudeImportedMessageSchema>
+export type ClaudeImportSession = z.infer<typeof ClaudeImportSessionSchema>
+export type ImportClaudeSessionsRequest = z.infer<typeof ImportClaudeSessionsRequestSchema>
+export type ClaudeImportResult = z.infer<typeof ClaudeImportResultSchema>
+export type ImportClaudeSessionsResponse = z.infer<typeof ImportClaudeSessionsResponseSchema>
+
 export const SessionCollaborationModeRequestSchema = z.object({
     mode: CodexCollaborationModeSchema
 })

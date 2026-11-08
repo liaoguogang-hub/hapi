@@ -2,9 +2,11 @@ import axios from 'axios'
 import type { AgentState, ClearOpencodeSessionCallbackRequest, ClearOpencodeSessionResponse, CreateMachineResponse, CreateSessionResponse, RunnerState, Machine, MachineMetadata, Metadata, Session } from '@/api/types'
 import { applyHubSessionSummaryContract } from '@/modules/common/sessionSummaryInstruction'
 import type { LocalResumeTarget, ResumableSession } from '@hapi/protocol'
-import { ImportDshSessionsResponseSchema, ImportKimiSessionsResponseSchema } from '@hapi/protocol/apiTypes'
+import { ImportDshSessionsResponseSchema, ImportClaudeSessionsResponseSchema,
+    ImportKimiSessionsResponseSchema } from '@hapi/protocol/apiTypes'
 import type { ImportDshSessionsRequest, ImportDshSessionsResponse } from '@hapi/protocol/apiTypes'
 import type { ImportKimiSessionsRequest, ImportKimiSessionsResponse } from '@hapi/protocol/apiTypes'
+import type { ImportClaudeSessionsRequest, ImportClaudeSessionsResponse } from '@hapi/protocol/apiTypes'
 import {
     AgentStateSchema,
     ClearOpencodeSessionResponseSchema,
@@ -318,6 +320,27 @@ export class ApiClient {
      * Persist Kimi Code history read from the local CLI store into this
      * namespace's hub store, with the original turn times.
      */
+    async importClaudeSessions(request: ImportClaudeSessionsRequest): Promise<ImportClaudeSessionsResponse> {
+        const response = await axios.post(
+            `${configuration.apiUrl}/cli/claude/import`,
+            request,
+            {
+                headers: this.authHeaders(),
+                timeout: 10 * 60_000
+            }
+        ).catch((error: unknown) => {
+            if (axios.isAxiosError(error) && error.response?.status === 404) {
+                throw new Error('The hub does not expose /cli/claude/import yet; restart it with this HAPI build.')
+            }
+            throw error
+        })
+        const parsed = ImportClaudeSessionsResponseSchema.safeParse(response.data)
+        if (!parsed.success) {
+            throw apiValidationError('Invalid /cli/claude/import response', response)
+        }
+        return parsed.data
+    }
+
     async importKimiSessions(request: ImportKimiSessionsRequest): Promise<ImportKimiSessionsResponse> {
         const response = await axios.post(
             `${configuration.apiUrl}/cli/kimi/import`,

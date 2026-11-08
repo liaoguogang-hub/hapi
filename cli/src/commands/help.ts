@@ -20,6 +20,7 @@ Commands:
   hapi resume [id]           Choose or resume an existing HAPI session
   hapi dsh-import [id]       Import DeepSeek Harness desktop history
   hapi kimi-import [id]      Import Kimi Code desktop history
+  hapi claude-import [id]    Import Claude Code (CLI / VS Code) history
   hapi hub [--relay]         Start the API + web hub
   hapi server                Alias for hapi hub
   hapi runner                Manage the background runner

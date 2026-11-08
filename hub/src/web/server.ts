@@ -28,6 +28,7 @@ import { createGitRoutes } from './routes/git'
 import { createCliRoutes } from './routes/cli'
 import { createDshImportRoutes } from './routes/dshImport'
 import { createKimiImportRoutes } from './routes/kimiImport'
+import { createClaudeImportRoutes } from './routes/claudeImport'
 import { createCodexDesktopRoutes } from './routes/codexDesktop'
 import { createPiSessionRoutes } from './routes/piSessions'
 import { createOpencodeSessionRoutes } from './routes/opencodeSessions'
@@ -289,6 +290,10 @@ function createWebApp(options: {
         getSyncEngine: options.getSyncEngine
     }))
     app.route('/cli', createKimiImportRoutes({
+        store: options.store,
+        getSyncEngine: options.getSyncEngine
+    }))
+    app.route('/cli', createClaudeImportRoutes({
         store: options.store,
         getSyncEngine: options.getSyncEngine
     }))
