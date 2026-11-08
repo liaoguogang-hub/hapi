@@ -1,5 +1,6 @@
 package app.hapi.companion.feature.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -54,6 +55,13 @@ fun HomeScreen(
     var showSignOutConfirm by rememberSaveable(activeHubUrl) { mutableStateOf(false) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // Material3's ModalNavigationDrawer does not consume the system Back
+    // gesture: without this, Back with the drawer open exits the app instead of
+    // closing the drawer.
+    BackHandler(enabled = drawerState.isOpen) {
+        scope.launch { drawerState.close() }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
