@@ -153,6 +153,21 @@ The toolbar filter sheet gained the same three orderings the drawer already has
 (newest first / oldest first / by name); both surfaces read and write one
 view-model state, so they cannot disagree.
 
+## Remote mirrors
+
+Local work mirrors to dedicated branches on the fork; `main` is deliberately
+left alone because the local baseline is upstream `eab2ce5f` while the fork's
+`main` tracks upstream 1787 commits further.
+
+| Local tree | Remote ref |
+|---|---|
+| this tree (`D:\hapi-main`, APK work) | `fork/feature/kestrel-android` |
+| `build/` (hub + CLI work) | `fork/feature/local-hub-cli-build` |
+| `deploy/` | private repo `liaoguogang-hub/hapi-deploy` |
+
+Push with `-c core.compression=0`: the SSH transport occasionally drops with
+`early EOF` on this connection.
+
 ## Versioning scheme
 
 Both values live in `android/gradle.properties`:
