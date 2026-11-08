@@ -153,6 +153,28 @@ The toolbar filter sheet gained the same three orderings the drawer already has
 (newest first / oldest first / by name); both surfaces read and write one
 view-model state, so they cannot disagree.
 
+## Running e2e locally
+
+The pinned Playwright Chromium cannot be downloaded on this machine (the CDN
+is unreachable), and the revision already on disk is not the one Playwright
+1.61 expects. Run against the installed Edge instead:
+
+```powershell
+$env:PLAYWRIGHT_CHANNEL = "msedge"
+node node_modules\playwright\cli.js test e2e/share-turn.spec.ts
+```
+
+`PLAYWRIGHT_CHANNEL` is read by `playwright.config.ts`; unset, the config keeps
+using the downloaded build (that is what CI does). Two traps:
+
+- Invoke `node node_modules\playwright\cli.js`, not `node_modules\.bin\playwright`
+  — that shim is a bun wrapper and fails with `EPERM: mkdir` on its transform
+  cache.
+- Run it from this full checkout, not from `build/`. The `build/` working copy
+  has hand-materialised `node_modules` (single hoisted version per package), so
+  `vite` resolves the wrong `rollup` and `@babel/*` the wrong `lru-cache`; the
+  dev server never starts there.
+
 ## Remote mirrors
 
 Local work mirrors to dedicated branches on the fork; `main` is deliberately
