@@ -388,3 +388,15 @@ Claude Code 的 CLI 与 VS Code 扩展共用一份存储：`~/.claude/projects/<
 - **`isSidechain: true` 是子 agent 的记录**，整段跳过。
 
 反方向不需要代码：APK 里跑的 Claude 会话就是真的 `claude` CLI，写的是同一份存储，VS Code 直接能看见。
+
+## 14. GitHub 镜像位置
+
+| 本地目录 | 远端引用 |
+|---|---|
+| `D:\hapi-main`（APK 改动） | `fork/feature/kestrel-android` |
+| `build/`（hub + CLI，本目录）| `fork/feature/local-hub-cli-build` |
+| `deploy/` | 私有仓库 `liaoguogang-hub/hapi-deploy` |
+
+`hapi` 的 `main` 故意没推：本地基线是上游 `eab2ce5f`，远端 `main` 已经又跟了
+1787 个上游提交，直接推等于强行合并。推送时加 `-c core.compression=0`，这条链路
+偶尔会在 `early EOF` 上掉线。
