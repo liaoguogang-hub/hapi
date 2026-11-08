@@ -24,6 +24,14 @@ export default defineConfig({
             name: 'chromium',
             use: {
                 ...devices['Desktop Chrome'],
+                // PLAYWRIGHT_CHANNEL=msedge (or chrome) runs the suite against a
+                // browser already installed on the machine. Useful where the
+                // Playwright CDN is unreachable and the pinned browser build
+                // cannot be downloaded: the assertions do not depend on the
+                // exact Chromium revision.
+                ...(process.env.PLAYWRIGHT_CHANNEL
+                    ? { channel: process.env.PLAYWRIGHT_CHANNEL }
+                    : {}),
                 launchOptions: {
                     // The CI runner and most sandboxed dev environments
                     // run as root or under restricted user namespaces;
