@@ -115,6 +115,18 @@ android/app/.../feature/sessions/SessionListViewModel.kt  agent groups, archived
 android/app/src/main/res/values{,-zh-rCN}/strings.xml     new labels
 ```
 
+### Drawer sort order (`0.34.3+local.12`)
+
+The drawer's view-options menu gained a "Sort order" section, matching the DSH
+remote app's drawer: newest first (default), oldest first, or by name. Pinned
+sessions stay on top in every mode — that part of the sidebar contract is not
+user-sortable — and the choice feeds the list as well as the drawer.
+
+Implementation note: the existing `sortSessionSummaries` comparator is the
+shared web/Android ordering, so the alternate orders live in the view-model as
+extra comparators layered under the same pinned-first prefix rather than being
+pushed into `core/protocol`.
+
 ## Versioning scheme
 
 Both values live in `android/gradle.properties`:

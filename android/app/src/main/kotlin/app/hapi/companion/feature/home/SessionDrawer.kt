@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import app.hapi.companion.R
 import app.hapi.companion.feature.sessions.AgentGroupUi
 import app.hapi.companion.feature.sessions.ArchivedFilter
+import app.hapi.companion.feature.sessions.SessionSort
 import app.hapi.companion.feature.sessions.SessionRowUi
 import app.hapi.companion.feature.sessions.localizedRelativeAge
 import app.hapi.companion.ui.components.AgentFlavorIcon
@@ -80,9 +81,11 @@ internal fun SessionDrawer(
     activeHubUrl: String,
     groups: List<AgentGroupUi>,
     archivedFilter: ArchivedFilter,
+    sort: SessionSort,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onArchivedFilterChange: (ArchivedFilter) -> Unit,
+    onSortChange: (SessionSort) -> Unit,
     onOpenSession: (String) -> Unit,
     onNewSession: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -158,6 +161,38 @@ internal fun SessionDrawer(
                     )
                 }
                 DropdownMenu(expanded = viewMenuOpen, onDismissRequest = { viewMenuOpen = false }) {
+                    Text(
+                        text = stringResource(R.string.sessions_drawer_sort_section),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                    SessionSort.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = stringResource(
+                                        when (option) {
+                                            SessionSort.UpdatedDesc -> R.string.sessions_drawer_sort_newest
+                                            SessionSort.UpdatedAsc -> R.string.sessions_drawer_sort_oldest
+                                            SessionSort.TitleAsc -> R.string.sessions_drawer_sort_name
+                                        },
+                                    ),
+                                    fontSize = 13.sp,
+                                    color = if (sort == option) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                )
+                            },
+                            onClick = {
+                                viewMenuOpen = false
+                                onSortChange(option)
+                            },
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     Text(
                         text = stringResource(R.string.sessions_drawer_archived_section),
                         fontSize = 11.sp,

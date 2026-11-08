@@ -247,6 +247,10 @@
     <string name="sessions_drawer_empty">暂无会话</string>
     <string name="sessions_drawer_show_more">展开其余 %1$d 个对话</string>
     <string name="sessions_drawer_show_less">收起</string>
+    <string name="sessions_drawer_sort_section">排序方式</string>
+    <string name="sessions_drawer_sort_newest">最近更新</string>
+    <string name="sessions_drawer_sort_oldest">最早优先</string>
+    <string name="sessions_drawer_sort_name">按名称</string>
     <string name="sessions_filter_unknown_machine">未知机器</string>
     <string name="sessions_offline_banner">离线 — 显示缓存的会话</string>
     <string name="sessions_section_recent">最近</string>

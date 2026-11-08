@@ -48,6 +48,19 @@ fun agentLabel(flavor: String?): String {
     return if (label == "Unknown") flavor.replaceFirstChar { it.uppercase() } else label
 }
 
+private val PINNED_FIRST: Comparator<SessionSummary> =
+    compareByDescending<SessionSummary> { it.globalPinned == true }
+        .thenByDescending { it.pinned == true }
+
+/** Oldest-first ordering for the drawer's ascending mode. */
+private val SESSION_ORDER_ASCENDING: Comparator<SessionSummary> = PINNED_FIRST
+    .thenBy { it.lastUserMessageAt ?: it.createdAt ?: 0L }
+    .thenBy { it.id }
+
+/** A–Z ordering; the displayed title is the same one the rows render. */
+private val SESSION_TITLE_ORDER: Comparator<SessionSummary> = PINNED_FIRST
+    .thenBy { SessionListViewModel.sessionTitle(it).lowercase(java.util.Locale.ROOT) }
+
 /** One rendered list row: the summary plus everything derived for display. */
 data class SessionRowUi(
     val summary: SessionSummary,
@@ -94,12 +107,16 @@ data class AgentGroupUi(
 /** Drawer view option for archived conversations (DSH remote parity). */
 enum class ArchivedFilter { Hidden, All, Only }
 
+/** Drawer ordering. Pinned rows stay on top in every mode. */
+enum class SessionSort { UpdatedDesc, UpdatedAsc, TitleAsc }
+
 /** Everything the drawer selects, folded into one value for the state combine. */
 data class ListSelection(
     val machine: String?,
     val query: String,
     val selected: String?,
     val archivedFilter: ArchivedFilter,
+    val sort: SessionSort,
 )
 
 data class SessionListUiState(
@@ -112,6 +129,8 @@ data class SessionListUiState(
     val agentGroups: List<AgentGroupUi> = emptyList(),
     /** Drawer view option: how archived conversations are treated. */
     val archivedFilter: ArchivedFilter = ArchivedFilter.Hidden,
+    /** Drawer view option: row ordering. */
+    val sort: SessionSort = SessionSort.UpdatedDesc,
     val isRefreshing: Boolean,
     /** True once either the snapshot or a refresh produced a list. */
     val hasLoaded: Boolean,
@@ -176,6 +195,8 @@ class SessionListViewModel(
     private val machineFilter = MutableStateFlow<String?>(null)
     /** Drawer view option: how archived conversations are treated. */
     private val archivedFilter = MutableStateFlow(ArchivedFilter.Hidden)
+    /** Drawer view option: row ordering. */
+    private val sortOrder = MutableStateFlow(SessionSort.UpdatedDesc)
     private val searchQuery = MutableStateFlow("")
     private val selectedSessionId = MutableStateFlow<String?>(null)
     private val isRefreshing = MutableStateFlow(false)
@@ -227,8 +248,16 @@ class SessionListViewModel(
         combine(sessionStore.sessions, machineStore.machines, lastSeenStore.state) { sessions, machines, lastSeen ->
             Triple(sessions, machines, lastSeen)
         },
-        combine(machineFilter, searchQuery, selectedSessionId, archivedFilter) { filter, query, selected, archived ->
-            ListSelection(machine = filter, query = query, selected = selected, archivedFilter = archived)
+        combine(
+            machineFilter, searchQuery, selectedSessionId, archivedFilter, sortOrder,
+        ) { filter, query, selected, archived, sort ->
+            ListSelection(
+                machine = filter,
+                query = query,
+                selected = selected,
+                archivedFilter = archived,
+                sort = sort,
+            )
         },
         combine(
             combine(isRefreshing, isOffline, hasRefreshedOnce, dateRange, timeZone) { refreshing, offline, loaded, range, _ ->
@@ -246,6 +275,7 @@ class SessionListViewModel(
             searchQuery = selection.query,
             selectedSessionId = selection.selected,
             archivedFilter = selection.archivedFilter,
+            sort = selection.sort,
             isRefreshing = chrome.refreshing,
             isOffline = chrome.offline,
             hasLoaded = chrome.refreshedOnce || sessions.isNotEmpty(),
@@ -366,6 +396,11 @@ class SessionListViewModel(
         archivedFilter.value = filter
     }
 
+    /** Drawer view option: row ordering. */
+    fun setSort(sort: SessionSort) {
+        sortOrder.value = sort
+    }
+
     /** Keep the selected row visible under list filters; reading is acknowledged by the transcript. */
     fun onSessionOpened(sessionId: String) {
         selectedSessionId.value = sessionId
@@ -473,6 +508,7 @@ class SessionListViewModel(
         searchQuery: String,
         selectedSessionId: String?,
         archivedFilter: ArchivedFilter,
+        sort: SessionSort,
         isRefreshing: Boolean,
         isOffline: Boolean,
         hasLoaded: Boolean,
@@ -522,14 +558,22 @@ class SessionListViewModel(
             SessionListFilters.prepareSidebarSessions(sessions, selectedSessionId),
         )
 
+        // Drawer ordering. Pinned rows stay ahead in every mode (the sidebar
+        // contract); the rest follow the chosen key.
+        val ordered = when (sort) {
+            SessionSort.UpdatedDesc -> prepared
+            SessionSort.UpdatedAsc -> prepared.sortedWith(SESSION_ORDER_ASCENDING)
+            SessionSort.TitleAsc -> prepared.sortedWith(SESSION_TITLE_ORDER)
+        }
+
         // Archived conversations: hidden by default, everything, or only
         // archived — the same three states the DSH remote drawer offers. The
         // filter runs before the calendar hints so a day whose only sessions are
         // archived does not light up with an empty list.
         val archiveScoped = when (archivedFilter) {
-            ArchivedFilter.Hidden -> prepared.filter { it.metadata?.lifecycleState != ARCHIVED_LIFECYCLE }
-            ArchivedFilter.All -> prepared
-            ArchivedFilter.Only -> prepared.filter { it.metadata?.lifecycleState == ARCHIVED_LIFECYCLE }
+            ArchivedFilter.Hidden -> ordered.filter { it.metadata?.lifecycleState != ARCHIVED_LIFECYCLE }
+            ArchivedFilter.All -> ordered
+            ArchivedFilter.Only -> ordered.filter { it.metadata?.lifecycleState == ARCHIVED_LIFECYCLE }
         }
 
         // Calendar hints derive from the full sidebar corpus, before date,
@@ -605,6 +649,7 @@ class SessionListViewModel(
             activeMachineFilter = activeFilter,
             agentGroups = agentGroups,
             archivedFilter = archivedFilter,
+            sort = sort,
             searchQuery = searchQuery,
             isRefreshing = isRefreshing,
             hasLoaded = hasLoaded,

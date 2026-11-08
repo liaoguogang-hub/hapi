@@ -71,9 +71,11 @@ fun HomeScreen(
                 activeHubUrl = activeHubUrl,
                 groups = state.agentGroups,
                 archivedFilter = state.archivedFilter,
+                sort = state.sort,
                 searchQuery = state.searchQuery,
                 onSearchQueryChange = viewModel::setSearchQuery,
                 onArchivedFilterChange = viewModel::setArchivedFilter,
+                onSortChange = viewModel::setSort,
                 onOpenSession = { sessionId ->
                     scope.launch { drawerState.close() }
                     onOpenSession(sessionId)

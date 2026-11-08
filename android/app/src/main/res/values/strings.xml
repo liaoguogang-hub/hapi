@@ -240,6 +240,10 @@
     <string name="sessions_drawer_empty">No conversations</string>
     <string name="sessions_drawer_show_more">Show %1$d more conversations</string>
     <string name="sessions_drawer_show_less">Collapse</string>
+    <string name="sessions_drawer_sort_section">Sort order</string>
+    <string name="sessions_drawer_sort_newest">Newest first</string>
+    <string name="sessions_drawer_sort_oldest">Oldest first</string>
+    <string name="sessions_drawer_sort_name">By name</string>
     <string name="sessions_filter_unknown_machine">Unknown machine</string>
     <string name="sessions_offline_banner">Offline — showing cached sessions</string>
     <string name="sessions_section_recent">Recent</string>
