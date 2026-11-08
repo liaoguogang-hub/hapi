@@ -127,6 +127,32 @@ shared web/Android ordering, so the alternate orders live in the view-model as
 extra comparators layered under the same pinned-first prefix rather than being
 pushed into `core/protocol`.
 
+### Claude Code import (`0.34.3+local.7` hub/CLI)
+
+Claude Code's CLI and the VS Code extension write one JSONL transcript per
+session under `~/.claude/projects/<slug>/<sessionId>.jsonl`. `hapi claude-import`
+reads that store and posts the mapped transcript to `/cli/claude/import`, which
+reuses the append-only, idempotent, refuses-to-interleave guarantees of the DSH
+and Kimi importers.
+
+Two mapping decisions worth remembering:
+
+- The project slug is a lossy encoding of the working directory, so every
+  session's `cwd` is taken from the records, not from the folder name.
+- One assistant message spans several records (one per content block: thinking,
+  text, tool_use). Text blocks are merged and emitted once; tool traffic and
+  thinking are dropped, which is what keeps a 400-message transcript readable on
+  a phone.
+
+The reverse direction needs no code: a Claude session started from the phone
+runs the real `claude` CLI, so it lands in the same store VS Code reads.
+
+### Filter-sheet sort (`0.34.3+local.13` APK)
+
+The toolbar filter sheet gained the same three orderings the drawer already has
+(newest first / oldest first / by name); both surfaces read and write one
+view-model state, so they cannot disagree.
+
 ## Versioning scheme
 
 Both values live in `android/gradle.properties`:
