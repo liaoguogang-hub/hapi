@@ -4,18 +4,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import app.hapi.companion.R
 import app.hapi.companion.feature.sessions.SessionDateRangePickerDialog
 import app.hapi.companion.feature.sessions.SessionFilterSheet
@@ -47,39 +52,59 @@ fun HomeScreen(
     var searchExpanded by rememberSaveable(activeHubUrl) { mutableStateOf(state.searchQuery.isNotEmpty()) }
     var filterDestination by rememberSaveable(activeHubUrl) { mutableStateOf(FilterDestination.Closed) }
     var showSignOutConfirm by rememberSaveable(activeHubUrl) { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    Scaffold(
-        topBar = {
-            HomeTopBar(
-                activeHubUrl = activeHubUrl,
-                pairedHubs = pairedHubs,
-                hasActiveFilters = state.hasActiveFilters,
-                connectionStatus = state.connectionStatus,
-                searchExpanded = searchExpanded,
-                searchQuery = state.searchQuery,
-                onOpenSearch = { searchExpanded = true },
-                onSearchQueryChange = viewModel::setSearchQuery,
-                onCloseSearch = {
-                    viewModel.setSearchQuery("")
-                    searchExpanded = false
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = !searchExpanded,
+        drawerContent = {
+            AgentDrawer(
+                agents = state.agents,
+                activeAgent = state.activeAgent,
+                showArchived = state.showArchived,
+                onSelectAgent = { agent ->
+                    viewModel.selectAgent(agent)
+                    scope.launch { drawerState.close() }
                 },
-                onOpenFilters = { filterDestination = FilterDestination.Filters },
-                onSwitchHub = onSwitchHub,
-                onPairAnotherHub = onPairAnotherHub,
-                onOpenSettings = onOpenSettings,
-                onSignOut = { showSignOutConfirm = true },
+                onShowArchivedChange = viewModel::setShowArchived,
             )
         },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            connectionChrome?.let { GlobalConnectionBanner(it) }
-            runnerSkewChrome?.let { RunnerSkewBanner(it) }
-            SessionListScreen(
-                viewModel = viewModel,
-                onOpenSession = onOpenSession,
-                modifier = Modifier.fillMaxSize(),
-                onNewSession = onNewSession,
-            )
+    ) {
+        Scaffold(
+            topBar = {
+                HomeTopBar(
+                    activeHubUrl = activeHubUrl,
+                    pairedHubs = pairedHubs,
+                    hasActiveFilters = state.hasActiveFilters,
+                    connectionStatus = state.connectionStatus,
+                    searchExpanded = searchExpanded,
+                    searchQuery = state.searchQuery,
+                    onOpenDrawer = { scope.launch { drawerState.open() } },
+                    onOpenSearch = { searchExpanded = true },
+                    onSearchQueryChange = viewModel::setSearchQuery,
+                    onCloseSearch = {
+                        viewModel.setSearchQuery("")
+                        searchExpanded = false
+                    },
+                    onOpenFilters = { filterDestination = FilterDestination.Filters },
+                    onSwitchHub = onSwitchHub,
+                    onPairAnotherHub = onPairAnotherHub,
+                    onOpenSettings = onOpenSettings,
+                    onSignOut = { showSignOutConfirm = true },
+                )
+            },
+        ) { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                connectionChrome?.let { GlobalConnectionBanner(it) }
+                runnerSkewChrome?.let { RunnerSkewBanner(it) }
+                SessionListScreen(
+                    viewModel = viewModel,
+                    onOpenSession = onOpenSession,
+                    modifier = Modifier.fillMaxSize(),
+                    onNewSession = onNewSession,
+                )
+            }
         }
     }
 

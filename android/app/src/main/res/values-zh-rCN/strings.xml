@@ -234,6 +234,12 @@
     <string name="sessions_section_pinned">置顶会话</string>
     <string name="sessions_section_sessions">会话</string>
     <string name="sessions_filter_all">全部</string>
+    <string name="sessions_drawer_open">打开 Agent 列表</string>
+    <string name="sessions_drawer_title">Agent</string>
+    <string name="sessions_drawer_subtitle">按 Agent 筛选对话</string>
+    <string name="sessions_agents_all">全部 Agent</string>
+    <string name="sessions_show_archived">显示归档对话</string>
+    <string name="sessions_show_archived_hint">包含已归档的对话</string>
     <string name="sessions_filter_unknown_machine">未知机器</string>
     <string name="sessions_offline_banner">离线 — 显示缓存的会话</string>
     <string name="sessions_section_recent">最近</string>
@@ -289,6 +295,10 @@
     <string name="chat_open_scratchlist">草稿夹</string>
     <string name="chat_open_scratchlist_count">草稿夹（%1$d）</string>
     <string name="chat_open_settings">会话设置</string>
+    <string name="chat_turns_open">对话回合</string>
+    <string name="chat_turns_title">回合导航 · %1$d 个回合</string>
+    <string name="chat_turn_no_prompt">（无提示词）</string>
+    <string name="chat_turn_position">回合 %1$d/%2$d</string>
     <string name="chat_session_actions">会话操作</string>
     <string name="chat_scratchlist_badge">草稿夹</string>
     <string name="chat_inactive_bar">会话已停止 — 发送消息即可恢复，或</string>

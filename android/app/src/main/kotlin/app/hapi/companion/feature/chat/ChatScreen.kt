@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
@@ -174,6 +175,18 @@ internal fun ChatScreen(
         }
     }
     val scope = rememberCoroutineScope()
+
+    // Turn navigation: one entry per user message, plus the transcript row that
+    // turn starts at. Jumping clears follow-the-tail first, otherwise the tail
+    // effect pulls the viewport straight back to the newest message.
+    val turns = remember(state.blocks) { buildChatTurns(state.blocks) }
+    var turnListOpen by rememberSaveable(state.sessionId) { mutableStateOf(false) }
+    val jumpToTurn: (ChatTurn) -> Unit = remember(state.sessionId, transcriptList) {
+        { turn ->
+            readingState.followsTail = false
+            scope.launch { transcriptList.scrollToItem(turn.blockIndex + 1) }
+        }
+    }
     val micPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -298,6 +311,16 @@ internal fun ChatScreen(
                 },
                 title = { ChatTitle(state.header, reconnecting, viewModel::retry) },
                 actions = {
+                    // Only shown once there is more than one turn: with a single
+                    // turn the dialog would list the message already on screen.
+                    if (turns.size > 1) {
+                        IconButton(onClick = { turnListOpen = true }) {
+                            Icon(
+                                Icons.Filled.List,
+                                contentDescription = stringResource(R.string.chat_turns_open),
+                            )
+                        }
+                    }
                     // Two icons max (device feedback: four icons squeezed the
                     // title out) — gear for the frequent config switches,
                     // everything else in the overflow menu.
@@ -411,6 +434,14 @@ internal fun ChatScreen(
                             onShowMessageInfo = { messageInfoBlock = it },
                         )
                     }
+                    if (!state.loadFailed && turns.size > 1) {
+                        // Tap or scrub the ticks to jump between turns.
+                        TurnRail(
+                            turns = turns,
+                            onPick = jumpToTurn,
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(vertical = 12.dp),
+                        )
+                    }
                     if (!state.loadFailed) state.warning?.let { warning ->
                         Box(Modifier.align(Alignment.TopCenter).padding(8.dp)) {
                             DegradedBanner(warning, viewModel::retry)
@@ -419,6 +450,17 @@ internal fun ChatScreen(
                 }
             }
         }
+    }
+
+    if (turnListOpen) {
+        TurnListDialog(
+            turns = turns,
+            onPick = { turn ->
+                turnListOpen = false
+                jumpToTurn(turn)
+            },
+            onDismiss = { turnListOpen = false },
+        )
     }
 
     if (attachmentSheetOpen) {

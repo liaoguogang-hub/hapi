@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Badge
@@ -72,6 +73,7 @@ internal fun HomeTopBar(
     connectionStatus: HomeConnectionStatus? = null,
     searchExpanded: Boolean,
     searchQuery: String,
+    onOpenDrawer: () -> Unit = {},
     onOpenSearch: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onCloseSearch: () -> Unit,
@@ -130,8 +132,16 @@ internal fun HomeTopBar(
             },
             navigationIcon = {
                 if (!searching) {
-                    // Match the two action widths so a truncated title stays centered.
-                    Box(Modifier.width(96.dp)) {
+                    // Match the two action widths so a truncated title stays
+                    // centered: the hamburger and the hub menu fill the same
+                    // 96dp the search/filter pair occupies on the right.
+                    Row(
+                        modifier = Modifier.width(96.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = onOpenDrawer, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Filled.Menu, stringResource(R.string.sessions_drawer_open))
+                        }
                         HubMenu(activeHubUrl, pairedHubs, onSwitchHub, onPairAnotherHub, onOpenSettings, onSignOut)
                     }
                 }

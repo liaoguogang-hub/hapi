@@ -6,6 +6,7 @@ import app.hapi.data.store.LastSeenState
 import app.hapi.data.store.LastSeenStore
 import app.hapi.data.store.MachineListStore
 import app.hapi.data.store.SessionListStore
+import app.hapi.protocol.catalog.Flavors
 import app.hapi.protocol.wire.Machine
 import app.hapi.protocol.wire.SessionSummary
 import app.hapi.protocol.wire.sortSessionSummaries
@@ -33,6 +34,19 @@ import kotlinx.coroutines.launch
 
 /** Sessions whose metadata carries no machine id group under this filter id. */
 const val UNKNOWN_MACHINE_ID: String = "__unknown__"
+
+/** Sessions whose metadata carries no flavor group under this drawer id. */
+const val UNKNOWN_AGENT: String = "__unknown_agent__"
+
+/** `metadata.lifecycleState` of a session the user archived. */
+const val ARCHIVED_LIFECYCLE: String = "archived"
+
+/** Drawer label for an agent id; unknown/missing flavors stay readable. */
+fun agentLabel(flavor: String?): String {
+    if (flavor == null || flavor == UNKNOWN_AGENT) return "Unknown"
+    val label = Flavors.label(flavor)
+    return if (label == "Unknown") flavor.replaceFirstChar { it.uppercase() } else label
+}
 
 /** One rendered list row: the summary plus everything derived for display. */
 data class SessionRowUi(
@@ -66,12 +80,38 @@ data class MachineFilterUi(
     val unnamed: Boolean = false,
 )
 
+/**
+ * One agent in the navigation drawer: the raw flavor id, its display label and
+ * how many sessions belong to it. Sorted by session count so the agents that
+ * are actually in use sit at the top.
+ */
+data class AgentFilterUi(
+    val id: String,
+    val label: String,
+    val sessionCount: Int,
+)
+
+/** Everything the drawer selects, folded into one value for the state combine. */
+data class ListSelection(
+    val machine: String?,
+    val query: String,
+    val selected: String?,
+    val agent: String?,
+    val showArchived: Boolean,
+)
+
 data class SessionListUiState(
     val rows: List<SessionRowUi>,
     /** Choices for the filter sheet, derived from all sessions. */
     val machineFilters: List<MachineFilterUi>,
     /** `null` = All. Always one of [machineFilters] ids (stale picks fall back). */
     val activeMachineFilter: String?,
+    /** Agents present in the drawer, most-used first. */
+    val agents: List<AgentFilterUi> = emptyList(),
+    /** `null` = All agents. A raw flavor id otherwise. */
+    val activeAgent: String? = null,
+    /** Drawer switch: include sessions whose lifecycleState is `archived`. */
+    val showArchived: Boolean = false,
     val isRefreshing: Boolean,
     /** True once either the snapshot or a refresh produced a list. */
     val hasLoaded: Boolean,
@@ -134,6 +174,10 @@ class SessionListViewModel(
     private val nowMs: () -> Long = System::currentTimeMillis,
 ) {
     private val machineFilter = MutableStateFlow<String?>(null)
+    /** Drawer agent filter: raw flavor id, or null for All. */
+    private val agentFilter = MutableStateFlow<String?>(null)
+    /** Drawer switch: archived sessions are hidden unless this is on. */
+    private val showArchived = MutableStateFlow(false)
     private val searchQuery = MutableStateFlow("")
     private val selectedSessionId = MutableStateFlow<String?>(null)
     private val isRefreshing = MutableStateFlow(false)
@@ -185,8 +229,8 @@ class SessionListViewModel(
         combine(sessionStore.sessions, machineStore.machines, lastSeenStore.state) { sessions, machines, lastSeen ->
             Triple(sessions, machines, lastSeen)
         },
-        combine(machineFilter, searchQuery, selectedSessionId) { filter, query, selected ->
-            Triple(filter, query, selected)
+        combine(machineFilter, searchQuery, selectedSessionId, agentFilter, showArchived) { filter, query, selected, agent, archived ->
+            ListSelection(machine = filter, query = query, selected = selected, agent = agent, showArchived = archived)
         },
         combine(
             combine(isRefreshing, isOffline, hasRefreshedOnce, dateRange, timeZone) { refreshing, offline, loaded, range, _ ->
@@ -195,14 +239,16 @@ class SessionListViewModel(
             lastRefreshedAt,
             connectionStatus,
         ) { chrome, refreshedAt, status -> chrome.copy(lastRefreshedAt = refreshedAt, connectionStatus = status) },
-    ) { (sessions, machines, lastSeen), (filter, query, selected), chrome ->
+    ) { (sessions, machines, lastSeen), selection, chrome ->
         buildUiState(
             sessions = sessions,
             machines = machines,
             lastSeen = lastSeen,
-            filter = filter,
-            searchQuery = query,
-            selectedSessionId = selected,
+            filter = selection.machine,
+            searchQuery = selection.query,
+            selectedSessionId = selection.selected,
+            agentFilter = selection.agent,
+            showArchived = selection.showArchived,
             isRefreshing = chrome.refreshing,
             isOffline = chrome.offline,
             hasLoaded = chrome.refreshedOnce || sessions.isNotEmpty(),
@@ -318,6 +364,16 @@ class SessionListViewModel(
         searchQuery.value = query
     }
 
+    /** Drawer: pick one agent's conversations, or null for all of them. */
+    fun selectAgent(flavor: String?) {
+        agentFilter.value = flavor
+    }
+
+    /** Drawer: include (`true`) or hide archived conversations. */
+    fun setShowArchived(include: Boolean) {
+        showArchived.value = include
+    }
+
     /** Keep the selected row visible under list filters; reading is acknowledged by the transcript. */
     fun onSessionOpened(sessionId: String) {
         selectedSessionId.value = sessionId
@@ -424,6 +480,8 @@ class SessionListViewModel(
         filter: String?,
         searchQuery: String,
         selectedSessionId: String?,
+        agentFilter: String?,
+        showArchived: Boolean,
         isRefreshing: Boolean,
         isOffline: Boolean,
         hasLoaded: Boolean,
@@ -466,6 +524,18 @@ class SessionListViewModel(
         val activeFilter = filter
             ?.takeIf { filters.size >= 2 && filters.any { chip -> chip.id == it } }
 
+        // Drawer choices derive from all sessions, before any filtering, so the
+        // selection can never hide its own alternatives.
+        val agents = sessions
+            .groupingBy { it.metadata?.flavor?.trim()?.lowercase()?.takeIf(String::isNotEmpty) ?: UNKNOWN_AGENT }
+            .eachCount()
+            .map { (id, count) -> AgentFilterUi(id = id, label = agentLabel(id), sessionCount = count) }
+            .sortedWith(
+                compareByDescending<AgentFilterUi> { it.sessionCount }
+                    .thenBy { it.label.lowercase(java.util.Locale.ROOT) },
+            )
+        val activeAgent = agentFilter?.takeIf { requested -> agents.any { it.id == requested } }
+
         // Choose the canonical agent-session views before applying filters,
         // so excluding a winner cannot resurrect an older duplicate. Restore
         // pinned/active order after dedup regroups the rows.
@@ -473,22 +543,39 @@ class SessionListViewModel(
             SessionListFilters.prepareSidebarSessions(sessions, selectedSessionId),
         )
 
+        // Archived conversations are hidden unless the drawer switch asks for
+        // them; that filter runs before the calendar hints so a day whose only
+        // sessions are archived does not light up with an empty list.
+        val archiveScoped = if (showArchived) {
+            prepared
+        } else {
+            prepared.filter { it.metadata?.lifecycleState != ARCHIVED_LIFECYCLE }
+        }
+
         // Calendar hints derive from the full sidebar corpus, before date,
         // machine, or search filtering (web `sessionActivityDates`). Machine
         // choices above retain their full source-snapshot counts.
-        val activityDays = prepared
+        val activityDays = archiveScoped
             .map { SessionDateRangeFilter.activityEpochDay(it.updatedAt, zone) }
             .toSet()
         val timeScoped = if (dateRange == null) {
-            prepared
+            archiveScoped
         } else {
-            prepared.filter { SessionDateRangeFilter.matches(it.updatedAt, dateRange, zone) }
+            archiveScoped.filter { SessionDateRangeFilter.matches(it.updatedAt, dateRange, zone) }
         }
 
-        val visible = if (activeFilter == null) {
+        val machineScoped = if (activeFilter == null) {
             timeScoped
         } else {
             timeScoped.filter { (it.metadata?.machineId ?: UNKNOWN_MACHINE_ID) == activeFilter }
+        }
+
+        val visible = if (activeAgent == null) {
+            machineScoped
+        } else {
+            machineScoped.filter {
+                (it.metadata?.flavor?.trim()?.lowercase()?.takeIf(String::isNotEmpty) ?: UNKNOWN_AGENT) == activeAgent
+            }
         }
 
         // Text search: relevance ranking over the already-prepared corpus,
@@ -531,6 +618,9 @@ class SessionListViewModel(
             rows = rows,
             machineFilters = filters,
             activeMachineFilter = activeFilter,
+            agents = agents,
+            activeAgent = activeAgent,
+            showArchived = showArchived,
             searchQuery = searchQuery,
             isRefreshing = isRefreshing,
             hasLoaded = hasLoaded,
