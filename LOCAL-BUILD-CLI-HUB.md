@@ -369,3 +369,22 @@ SQLiteError: unable to open database file
 
 症状特征：小会话能导、大会话（长文本或几十条以上）失败，且只在 exe 上出现。
 以后再加类似「批量写入 + 全文索引」的功能，记得这条已经修好的前提。
+
+## 13. Claude Code 历史导入（0.34.3+local.7）
+
+Claude Code 的 CLI 与 VS Code 扩展共用一份存储：`~/.claude/projects/<slug>/<sessionId>.jsonl`。
+
+| 位置 | 内容 |
+|---|---|
+| `shared/src/apiTypes.ts` | `ClaudeImport*` / `ImportClaudeSessions*` |
+| `cli/src/modules/common/claudeSessions.ts` | 枚举 + JSONL 解析 + 映射 |
+| `cli/src/commands/claudeImport.ts` | `hapi claude-import [--cwd] [--all] [--limit]` |
+| `hub/src/web/routes/claudeImport.ts` | `POST /cli/claude/import` |
+
+三个容易踩的点：
+
+- **slug 是有损的**（`D:\KimiCode` → `D--KimiCode`），所以 cwd 从记录的 `cwd` 字段读，不从目录名反推。
+- **一条 assistant 消息跨多条记录**（thinking / text / tool_use 各一条）。按 message id 合并，只保留 text，否则 400 条消息的会话在手机上会变成几千条。
+- **`isSidechain: true` 是子 agent 的记录**，整段跳过。
+
+反方向不需要代码：APK 里跑的 Claude 会话就是真的 `claude` CLI，写的是同一份存储，VS Code 直接能看见。
