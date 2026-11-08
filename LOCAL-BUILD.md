@@ -18,7 +18,7 @@ adds model pickers the upstream Android client does not have.
 | Baseline tag | `upstream-2741217` (branch `upstream-base`) |
 | Local branch | `main` |
 | Application ID | `run.hapi.companion` |
-| Current version | `0.34.3+local.8` (`hapiVersionCode=298943518`) |
+| Current version | `0.34.3+local.8` (`hapiVersionCode=298943519`) |
 
 ## What the patch does
 
@@ -90,8 +90,8 @@ android/app/src/main/res/values{,-zh-rCN}/strings.xml     new labels
 Both values live in `android/gradle.properties`:
 
 ```properties
-hapiVersionName=0.34.3+local.8
-hapiVersionCode=298943518
+hapiVersionName=0.34.3+local.9
+hapiVersionCode=298943519
 ```
 
 - `hapiVersionName` — upstream's release string plus a `+local.N` marker, where
