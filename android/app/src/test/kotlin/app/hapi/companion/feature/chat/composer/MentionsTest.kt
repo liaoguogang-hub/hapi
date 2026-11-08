@@ -263,7 +263,7 @@ class MentionsTest {
     @Test
     fun `buildSessionReferenceText omits the title when blank after normalization`() {
         assertEquals(
-            "See HAPI session /sessions/abc-def for context." + Mentions.SESSION_REFERENCE_STEER_SUFFIX,
+            "See Kestrel session /sessions/abc-def for context." + Mentions.SESSION_REFERENCE_STEER_SUFFIX,
             Mentions.buildSessionReferenceText("   \n\t  ", "abc-def"),
         )
     }
