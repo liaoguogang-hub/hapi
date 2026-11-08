@@ -18,7 +18,7 @@ adds model pickers the upstream Android client does not have.
 | Baseline tag | `upstream-2741217` (branch `upstream-base`) |
 | Local branch | `main` |
 | Application ID | `run.hapi.companion` |
-| Current version | `0.34.3+local.3` (`hapiVersionCode=298943513`) |
+| Current version | `0.34.3+local.8` (`hapiVersionCode=298943518`) |
 
 ## What the patch does
 
@@ -55,13 +55,43 @@ android/app/.../feature/newsession/NewSession*.kt    new-session form
 + three test files
 ```
 
+### Navigation patch (`0.34.3+local.8`)
+
+Three gaps reported from the phone:
+
+- **Agent drawer** — `ModalNavigationDrawer` opened by a hamburger in the top
+  bar. One row per agent flavor with its session count, plus "All agents". The
+  choice is a new agent filter in `SessionListViewModel`, derived from all
+  sessions before filtering so it cannot hide its own alternatives.
+- **Archived toggle** — the same drawer carries a "Show archived" switch.
+  Sessions with `metadata.lifecycleState = archived` are now hidden by default
+  and the switch brings them back. Calendar activity hints derive from the
+  archive-filtered corpus, so a day whose only sessions are archived no longer
+  lights up with an empty list.
+- **Turn navigation** — matches the DSH remote app: a numbered turn list from
+  the chat top bar (tap to jump) and a rail of ticks down the right edge that
+  can be tapped or scrubbed. Turns are derived from user text blocks because
+  hapi records no turn boundaries for imported or agent-authored history;
+  jumping clears follow-the-tail so the viewport is not pulled back to the
+  newest message.
+
+```
+android/app/.../feature/home/AgentDrawer.kt          new: drawer content
+android/app/.../feature/chat/TurnNavigation.kt       new: turn list + rail
+android/app/.../feature/home/HomeScreen.kt           drawer wiring
+android/app/.../feature/home/HomeTopBar.kt           hamburger
+android/app/.../feature/chat/ChatScreen.kt           turn entry + rail
+android/app/.../feature/sessions/SessionListViewModel.kt  agent/archived filters
+android/app/src/main/res/values{,-zh-rCN}/strings.xml     new labels
+```
+
 ## Versioning scheme
 
 Both values live in `android/gradle.properties`:
 
 ```properties
-hapiVersionName=0.34.3+local.3
-hapiVersionCode=298943513
+hapiVersionName=0.34.3+local.8
+hapiVersionCode=298943518
 ```
 
 - `hapiVersionName` — upstream's release string plus a `+local.N` marker, where
