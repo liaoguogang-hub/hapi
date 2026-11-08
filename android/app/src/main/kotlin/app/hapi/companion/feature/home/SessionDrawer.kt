@@ -33,7 +33,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +43,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +59,12 @@ import app.hapi.companion.feature.sessions.ArchivedFilter
 import app.hapi.companion.feature.sessions.SessionRowUi
 import app.hapi.companion.feature.sessions.localizedRelativeAge
 import app.hapi.companion.ui.components.AgentFlavorIcon
+
+/** Rows shown per agent before the first "show more" tap. */
+private const val DRAWER_PAGE = 5
+
+/** Rows revealed by each subsequent tap. */
+private const val DRAWER_PAGE_STEP = 5
 
 /**
  * Drawer used as the conversation browser, following the DSH remote app: a
@@ -80,6 +91,25 @@ internal fun SessionDrawer(
     var viewMenuOpen by remember { mutableStateOf(false) }
     // Collapsed agent groups, remembered for the lifetime of the drawer.
     val collapsed = remember { mutableStateMapOf<String, Boolean>() }
+    // Per-group "show more" counter; each tap reveals another page.
+    val extraRows = remember { mutableStateMapOf<String, Int>() }
+    // The search box keeps its own text. Binding it straight to the view-model
+    // state made the caret jump to the start on the first keystroke: the field
+    // committed the new text locally, then the round-tripped value arrived a
+    // frame later and reset the selection.
+    var queryDraft by remember { mutableStateOf(searchQuery) }
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    // Opening the drawer search should put the caret in it, like the top bar's.
+    LaunchedEffect(searchOpen) {
+        if (searchOpen) {
+            searchFocus.requestFocus()
+            keyboard?.show()
+        }
+    }
+    if (!searchOpen && queryDraft.isNotEmpty() && searchQuery.isEmpty()) {
+        queryDraft = ""
+    }
 
     ModalDrawerSheet(modifier = modifier.width(320.dp)) {
         Row(
@@ -175,14 +205,18 @@ internal fun SessionDrawer(
 
         if (searchOpen) {
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
+                value = queryDraft,
+                onValueChange = { draft ->
+                    queryDraft = draft
+                    onSearchQueryChange(draft)
+                },
                 placeholder = { Text(stringResource(R.string.sessions_search_hint), fontSize = 12.sp) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
+                    .padding(horizontal = 14.dp)
+                    .focusRequester(searchFocus),
             )
         }
 
@@ -238,8 +272,35 @@ internal fun SessionDrawer(
                     }
                 }
                 if (collapsed[group.id] != true) {
-                    items(group.sessions, key = { "session:${it.id}" }) { row ->
+                    val shown = group.sessions.take(DRAWER_PAGE + (extraRows[group.id] ?: 0))
+                    items(shown, key = { "session:${it.id}" }) { row ->
                         DrawerSessionRow(row = row, onOpen = { onOpenSession(row.id) })
+                    }
+                    val hidden = group.sessions.size - shown.size
+                    if (hidden > 0) {
+                        item(key = "more:${group.id}") {
+                            TextButton(
+                                onClick = { extraRows[group.id] = (extraRows[group.id] ?: 0) + DRAWER_PAGE_STEP },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sessions_drawer_show_more, hidden),
+                                    fontSize = 12.sp,
+                                )
+                            }
+                        }
+                    } else if ((extraRows[group.id] ?: 0) > 0) {
+                        item(key = "less:${group.id}") {
+                            TextButton(
+                                onClick = { extraRows[group.id] = 0 },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sessions_drawer_show_less),
+                                    fontSize = 12.sp,
+                                )
+                            }
+                        }
                     }
                 }
             }

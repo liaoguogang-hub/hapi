@@ -179,6 +179,17 @@ private fun HomeSearchField(query: String, onQueryChange: (String) -> Unit, onSe
         keyboard?.show()
     }
 
+    // The field owns its text while typing. Driving BasicTextField straight off
+    // the view-model value made the caret jump to position 0 after the first
+    // keystroke: the local edit was replaced a frame later by the round-tripped
+    // string, and a String-based field re-derives the selection when the value
+    // changes from outside.
+    var draft by remember { mutableStateOf(query) }
+    // External changes (a cleared query) still have to reach the field; the echo
+    // of our own keystroke compares equal and is a no-op.
+    LaunchedEffect(query) {
+        if (query != draft) draft = query
+    }
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(
             Icons.Default.Search,
@@ -187,8 +198,11 @@ private fun HomeSearchField(query: String, onQueryChange: (String) -> Unit, onSe
             modifier = Modifier.padding(start = 4.dp, end = 12.dp),
         )
         BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
+            value = draft,
+            onValueChange = { next ->
+                draft = next
+                onQueryChange(next)
+            },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -198,7 +212,7 @@ private fun HomeSearchField(query: String, onQueryChange: (String) -> Unit, onSe
                 .semantics { contentDescription = hint }.testTag("home-search-input"),
             decorationBox = { input ->
                 Box(contentAlignment = Alignment.CenterStart) {
-                    if (query.isEmpty()) {
+                    if (draft.isEmpty()) {
                         Text(
                             hint,
                             style = MaterialTheme.typography.bodyLarge,

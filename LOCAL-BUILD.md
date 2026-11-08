@@ -18,7 +18,7 @@ adds model pickers the upstream Android client does not have.
 | Baseline tag | `upstream-2741217` (branch `upstream-base`) |
 | Local branch | `main` |
 | Application ID | `run.hapi.companion` |
-| Current version | `0.34.3+local.10` (`hapiVersionCode=298943520`) |
+| Current version | `0.34.3+local.11` (`hapiVersionCode=298943521`) |
 
 ## What the patch does
 
@@ -86,6 +86,25 @@ Two behaviour notes that came out of device testing:
 - The drawer search field writes the same query as the top-bar search, so the
   drawer and the list never disagree about what is filtered.
 
+### Drawer paging and the search caret (`0.34.3+local.11`)
+
+Both came straight from device feedback:
+
+- **Five rows per agent, then +5.** A hub with 84 DeepSeek Harness sessions
+  buried every other agent. Each group now shows five rows and a
+  "Show N more conversations" button that reveals five more per tap, with a
+  collapse row once the list is fully open.
+- **Search caret no longer jumps.** Both search fields were driven straight off
+  the view-model string. The local edit was replaced one frame later by the
+  round-tripped value, and a String-based field re-derives the selection when
+  its value changes from outside — so the second keystroke landed before the
+  first (typing `abc` produced `cba`). Each field now keeps its own draft and
+  only adopts an external value when it actually differs. Verified on the
+  device: `input text abc` leaves `abc` in the field, both in the top bar and
+  in the drawer.
+- The drawer's search field also gained auto-focus; without it, tapping the
+  magnifier opened an empty field that the keyboard did not target.
+
 ```
 android/app/.../feature/home/SessionDrawer.kt        new: grouped browser
 android/app/.../feature/chat/TurnNavigation.kt       new: turn list + rail
@@ -101,8 +120,8 @@ android/app/src/main/res/values{,-zh-rCN}/strings.xml     new labels
 Both values live in `android/gradle.properties`:
 
 ```properties
-hapiVersionName=0.34.3+local.10
-hapiVersionCode=298943520
+hapiVersionName=0.34.3+local.11
+hapiVersionCode=298943521
 ```
 
 - `hapiVersionName` — upstream's release string plus a `+local.N` marker, where

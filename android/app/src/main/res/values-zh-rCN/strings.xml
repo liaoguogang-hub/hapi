@@ -245,6 +245,8 @@
     <string name="sessions_drawer_no_match">无匹配结果</string>
     <string name="sessions_drawer_empty_archived">暂无已归档会话</string>
     <string name="sessions_drawer_empty">暂无会话</string>
+    <string name="sessions_drawer_show_more">展开其余 %1$d 个对话</string>
+    <string name="sessions_drawer_show_less">收起</string>
     <string name="sessions_filter_unknown_machine">未知机器</string>
     <string name="sessions_offline_banner">离线 — 显示缓存的会话</string>
     <string name="sessions_section_recent">最近</string>
