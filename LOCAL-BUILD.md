@@ -175,6 +175,25 @@ using the downloaded build (that is what CI does). Two traps:
   `vite` resolves the wrong `rollup` and `@babel/*` the wrong `lru-cache`; the
   dev server never starts there.
 
+### What the suite covers
+
+`bun run test:e2e` runs everything (183 tests). The CI job only runs a curated
+list of 11 spec files (72 tests), so a green PR does **not** mean the whole
+suite passes — the two brand leftovers fixed on 2026-11-08 (`share-turn`,
+`settings-responsive`) were both found by the local run, and `share-turn` only
+failed in CI because it happens to be on the curated list.
+
+Known local-only failures on this machine, unrelated to the app:
+
+| Spec | Why |
+|---|---|
+| `composer-copy.spec.ts` | clipboard text differs by trailing whitespace under Edge; passes in CI's Chromium |
+| `history-load.spec.ts` | history request timing assertions are slower than the 20s budget here |
+| `history-navigation-layout.spec.ts` | same navigation timing |
+| `scratchlist-exit-after-queue.spec.ts` | expects string queue entries, receives objects — not in the CI list, state on this base is unknown |
+
+Treat the last row as an open question, not a known-good baseline.
+
 ## Remote mirrors
 
 Local work mirrors to dedicated branches on the fork; `main` is deliberately
