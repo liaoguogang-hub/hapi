@@ -682,6 +682,7 @@
     <string name="sessions_filters_reset">Reset</string>
     <string name="sessions_filters_done">Done</string>
     <string name="sessions_filter_machines">Machines</string>
+    <string name="sessions_filter_sort">Sort order</string>
     <string name="sessions_filter_dates">Activity dates</string>
     <string name="sessions_filter_any_date">Any date</string>
     <string name="sessions_filter_clear_dates">Clear date filter</string>

@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.hapi.companion.R
+import app.hapi.companion.feature.sessions.SessionSort
 import kotlinx.coroutines.launch
 
 @Composable
@@ -33,6 +34,7 @@ internal fun machineFilterLabel(filter: MachineFilterUi): String = when {
 internal fun SessionFilterSheet(
     state: SessionListUiState,
     onSelectMachine: (String?) -> Unit,
+    onSelectSort: (SessionSort) -> Unit,
     onOpenDates: () -> Unit,
     onClearDates: () -> Unit,
     onReset: () -> Unit,
@@ -79,6 +81,27 @@ internal fun SessionFilterSheet(
                 }
                 item("divider") { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             }
+            item("sort-title") {
+                Text(
+                    stringResource(R.string.sessions_filter_sort),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            items(SessionSort.entries, key = { "sort:${it.name}" }) { option ->
+                FilterOption(
+                    label = stringResource(
+                        when (option) {
+                            SessionSort.UpdatedDesc -> R.string.sessions_drawer_sort_newest
+                            SessionSort.UpdatedAsc -> R.string.sessions_drawer_sort_oldest
+                            SessionSort.TitleAsc -> R.string.sessions_drawer_sort_name
+                        },
+                    ),
+                    selected = state.sort == option,
+                    select = { onSelectSort(option) },
+                )
+            }
+            item("sort-divider") { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             item("dates") {
                 val range = state.dateRange
                 ListItem(

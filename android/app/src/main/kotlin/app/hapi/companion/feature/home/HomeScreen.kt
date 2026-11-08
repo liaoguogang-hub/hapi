@@ -130,6 +130,7 @@ fun HomeScreen(
         SessionFilterSheet(
             state = state,
             onSelectMachine = viewModel::setMachineFilter,
+            onSelectSort = viewModel::setSort,
             onOpenDates = { filterDestination = FilterDestination.Dates },
             onClearDates = viewModel::clearDateRange,
             onReset = viewModel::clearFilters,

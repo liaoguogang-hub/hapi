@@ -689,6 +689,7 @@
     <string name="sessions_filters_reset">重置</string>
     <string name="sessions_filters_done">完成</string>
     <string name="sessions_filter_machines">机器</string>
+    <string name="sessions_filter_sort">排序方式</string>
     <string name="sessions_filter_dates">活动日期</string>
     <string name="sessions_filter_any_date">不限日期</string>
     <string name="sessions_filter_clear_dates">清除日期筛选</string>
