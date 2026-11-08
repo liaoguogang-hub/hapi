@@ -7,7 +7,7 @@ test.describe('settings responsive layout', () => {
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto(fixture)
 
-        await expect(page.getByText('Choose a category to adjust HAPI to your workflow.')).toBeVisible()
+        await expect(page.getByText('Choose a category to adjust Kestrel to your workflow.')).toBeVisible()
         await expect(page.getByRole('button', { name: /Display/ })).toBeVisible()
         await expect(page.locator('aside')).toBeHidden()
 
@@ -15,7 +15,7 @@ test.describe('settings responsive layout', () => {
 
         await expect(page.locator('header').getByRole('heading', { name: 'Display' })).toBeVisible()
         await expect(page.getByText('Appearance, typography, and session list preferences.')).toBeVisible()
-        await expect(page.getByText('Choose a category to adjust HAPI to your workflow.')).toBeHidden()
+        await expect(page.getByText('Choose a category to adjust Kestrel to your workflow.')).toBeHidden()
         await expect(page.getByRole('listbox')).toHaveCount(0)
     })
 
@@ -28,7 +28,7 @@ test.describe('settings responsive layout', () => {
         await expect(desktopNav.getByRole('button', { name: 'Display' })).toHaveAttribute('aria-current', 'page')
         await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible()
         await expect(page.getByText('Appearance, typography, and session list preferences.')).toBeVisible()
-        await expect(page.getByText('Choose a category to adjust HAPI to your workflow.')).toBeHidden()
+        await expect(page.getByText('Choose a category to adjust Kestrel to your workflow.')).toBeHidden()
 
         const appBadgeToggle = page.getByRole('checkbox', { name: 'Taskbar unread badge' })
         await expect(appBadgeToggle).not.toBeChecked()
@@ -38,7 +38,7 @@ test.describe('settings responsive layout', () => {
         await expect(page.getByRole('checkbox', { name: 'Taskbar unread badge' })).toBeChecked()
 
         await page.setViewportSize({ width: 390, height: 844 })
-        await expect(page.getByText('Choose a category to adjust HAPI to your workflow.')).toBeVisible()
+        await expect(page.getByText('Choose a category to adjust Kestrel to your workflow.')).toBeVisible()
         await expect(page.locator('aside')).toBeHidden()
     })
 })
